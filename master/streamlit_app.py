@@ -294,7 +294,7 @@ def show_chat_page():
         # Function to display messages in a scrollable box
         def display_messages():
             messages = data["messages"].get(user_id, {}).get(chat_with, [])
-            message_text = "\n".join(messages)  # Join messages with a newline
+            message_text = "<br>".join(messages)  # Join messages with <br> for line breaks
             
             # Use markdown with custom CSS for scrollable box
             st.markdown(f"""
@@ -302,6 +302,7 @@ def show_chat_page():
                     <pre>{message_text}</pre>
                 </div>
             """, unsafe_allow_html=True)
+
         
 
         display_messages()
