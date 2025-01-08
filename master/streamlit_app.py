@@ -205,10 +205,6 @@ def show_notifications_page():
                     st.session_state.chat_with = match_id
                     st.session_state.page = "chat"  # Navigate to chat page
 
-# Ensure session state is initialized
-if "messages" not in st.session_state:
-    st.session_state.messages = {}
-
 def show_chat_page():
     st.title("Chat with Matches")
     show_back_button()  # Function for the back button (if necessary)
@@ -237,8 +233,13 @@ def show_chat_page():
     # Show the chat history in the container
     chat_container.text_area("Chat History", value=chat_text, height=300, max_chars=None, key="chat_display", disabled=True)
     
-    # Text input field for typing a message (keyed to match profile ID)
-    message = st.text_input("Type your message here", key=f"message_{match_profile['id']}")
+    # Check if we already have a value for the message in the session state
+    message_key = f"message_{match_profile['id']}"
+    if message_key not in st.session_state:
+        st.session_state[message_key] = ""  # Initialize empty message field
+
+    # Display the text input field using session state value
+    message = st.text_input("Type your message here", value=st.session_state[message_key], key=message_key)
     
     # Send button
     if st.button(f"Send to {match_profile['name']}", key=f"send_{match_profile['id']}"):
@@ -250,14 +251,12 @@ def show_chat_page():
             # Save updated messages (if necessary)
             save_data(data)  # Assume save_data persists the data in your backend
             
-            # Instead of modifying session state directly to reset, set the input field value to an empty string
-            # Display the input with a blank string
-            st.text_input("Type your message here", value="", key=f"message_{match_profile['id']}")  # Clear input field
+            # Update the session state for the input field, which is still shown with the same key
+            st.session_state[message_key] = ""  # Clear input field value
         else:
             st.error("Please type a message.")
     
     # **NEW**: Check for new messages from the other person every 5 seconds
-    # We will update the chat container after checking for new messages
     while True:
         new_message = check_for_other_persons_message(match_profile["id"])
         if new_message:
@@ -287,6 +286,7 @@ def check_for_other_persons_message(match_profile_id):
             # Assume the last message is from the other person
             return chat_history[-1]  # Return the last message as the new message
     return None
+    
 # Routing logic
 if st.session_state.page == "home":
     show_home_page()
