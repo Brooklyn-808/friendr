@@ -2,7 +2,6 @@ import streamlit as st
 import json
 import os
 import uuid
-import time
 
 # File to store user profiles and messages
 DATA_FILE = "profiles.json"
@@ -46,15 +45,17 @@ def show_home_page():
     st.subheader("Welcome to Friendr!")
     st.write("Swipe, match, and chat with new friends!")
     if st.button("Login / Sign Up"):
+        st.session_state.user_id = None
         st.session_state.logged_in = False
+        st.experimental_rerun()
 
 # Login/Sign-Up Page
 def show_login_page():
     st.title("Login / Sign-Up")
     st.write("Please log in or sign up to continue.")
     
-    user_name = st.text_input("Username")
-    password = st.text_input("Password", type="password")
+    user_name = st.text_input("Username", key="login_username")
+    password = st.text_input("Password", type="password", key="login_password")
     
     if st.button("Login"):
         # Find user by username
@@ -65,6 +66,7 @@ def show_login_page():
                 st.session_state.user_id = user["id"]
                 st.session_state.logged_in = True
                 st.success("Logged in successfully!")
+                st.experimental_rerun()
             else:
                 st.error("Incorrect password. Please try again.")
         else:
@@ -86,6 +88,7 @@ def show_login_page():
             st.session_state.user_id = new_user_id
             st.session_state.logged_in = True
             st.success("Sign-up successful! You are now logged in.")
+            st.experimental_rerun()
         else:
             st.error("Please fill in both fields.")
 
@@ -102,10 +105,10 @@ def show_main_page():
     # Sidebar for editing profile
     with st.sidebar:
         st.title("Your Profile")
-        user_name = st.text_input("Name", user_profile["name"])
-        user_age = st.number_input("Age", min_value=13, max_value=100, value=user_profile.get("age", 18))
-        user_interests = st.text_input("Interests (comma-separated)", ", ".join(user_profile["interests"]))
-        user_bio = st.text_area("Bio", user_profile.get("bio", ""))
+        user_name = st.text_input("Name", user_profile["name"], key="profile_name")
+        user_age = st.number_input("Age", min_value=13, max_value=100, value=user_profile.get("age", 18), key="profile_age")
+        user_interests = st.text_input("Interests (comma-separated)", ", ".join(user_profile["interests"]), key="profile_interests")
+        user_bio = st.text_area("Bio", user_profile.get("bio", ""), key="profile_bio")
         
         if st.button("Save Profile"):
             user_profile.update({
@@ -132,15 +135,17 @@ def show_main_page():
             
             col1, col2 = st.columns(2)
             with col1:
-                if st.button("👍 Like"):
+                if st.button("👍 Like", key=f"like_{st.session_state.current_index}"):
                     if user_id not in data["likes"]:
                         data["likes"][user_id] = []
                     data["likes"][user_id].append(profile["id"])
                     save_data(data)
                     st.session_state.current_index += 1
+                    st.experimental_rerun()
             with col2:
-                if st.button("👎 Skip"):
+                if st.button("👎 Skip", key=f"skip_{st.session_state.current_index}"):
                     st.session_state.current_index += 1
+                    st.experimental_rerun()
         else:
             st.write("No more profiles to swipe!")
     else:
