@@ -8,7 +8,7 @@ from langchain_openai import ChatOpenAI
 
 # File to store user profiles and messages
 DATA_FILE = "profiles.json"
-
+"""
 # Initialize ChatOpenAI model with skip_on_failure in model_kwargs
 chat_omodel = ChatOpenAI(
     model_name='gpt-4',  # Use the correct model name
@@ -27,7 +27,7 @@ def safe(msg):
     )
     response = omodel(prompt).strip().lower()  # Normalize the response
     return response == "true"
-
+"""
 
 
 
@@ -333,7 +333,7 @@ def show_chat_page():
         new_message = st.text_input("Write your message...", key="new_message")
 
         if st.button("Send"):
-            if new_message and safe(new_message):
+            if new_message: # and safe(new_message):
                 if user_id not in data["messages"]:
                     data["messages"][user_id] = {}
                 if chat_with not in data["messages"][user_id]:
@@ -345,7 +345,8 @@ def show_chat_page():
                 if user_id not in data["messages"][chat_with]:
                     data["messages"][chat_with][user_id] = []
                 data["messages"][chat_with][user_id].append(new_message)
-            if not safe(new_message):
+                save_data(data)
+            """if not safe(new_message):
                 if user_id not in data["messages"]:
                     data["messages"][user_id] = {}
                 if chat_with not in data["messages"][user_id]:
@@ -358,7 +359,7 @@ def show_chat_page():
                     data["messages"][chat_with][user_id] = []
                 data["messages"][chat_with][user_id].append("Inappropriate Message Detected")
 
-                save_data(data)
+                save_data(data)"""
             st.rerun()
         if st.button("Refresh Chat"):
             st.rerun()  # Trigger a rerun of the app, which will refresh the page
