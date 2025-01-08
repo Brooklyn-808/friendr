@@ -303,7 +303,6 @@ def show_chat_page():
                 </div>
             """, unsafe_allow_html=True)
         
-        display_messages()
 
         # Input for new messages
         new_message = st.text_input("Write your message...", key="new_message")
