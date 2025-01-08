@@ -89,7 +89,10 @@ if st.session_state.user_profile:
     # Update unseen_profiles list with new profiles
     unseen_names = {p["name"] for p in profiles}
     seen_names = {p["name"] for p in st.session_state.unseen_profiles}
-    new_profiles = unseen_names - seen_names
+    liked_names = {name for name, liked_users in data["likes"].items() if user in liked_users}
+    
+    # Make sure to exclude liked or already seen profiles
+    new_profiles = unseen_names - seen_names - liked_names
     st.session_state.unseen_profiles += [p for p in profiles if p["name"] in new_profiles]
 
     # Check if someone liked the user
@@ -122,8 +125,9 @@ if st.session_state.user_profile:
             current_time = time.time()
             if current_time - st.session_state.last_refresh >= 5:
                 st.session_state.last_refresh = current_time
+                # Reset the index and filter the profiles again
                 st.session_state.current_index = 0
-                st.session_state.unseen_profiles = [p for p in profiles if p["name"] not in seen_names]
+                st.session_state.unseen_profiles = [p for p in profiles if p["name"] not in seen_names and p["name"] not in liked_names]
                 st.success("Profiles refreshed! 🎉")
             else:
                 st.warning("Please wait 5 seconds before refreshing again.")
