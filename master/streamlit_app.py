@@ -231,9 +231,10 @@ def show_chat_page():
     chat_text = "\n".join(chat_history)  # Join messages with newline to display
     st.text_area("Chat History", value=chat_text, height=300, max_chars=None, key="chat_display", disabled=True)
 
-    # Text input field for typing a message
+    # Text input field for typing a message (keyed to match profile ID)
     message = st.text_input("Type your message here", key=f"message_{match_profile['id']}")
-
+    
+    # Send button
     if st.button(f"Send to {match_profile['name']}", key=f"send_{match_profile['id']}"):
         if message:
             # Append the new message to the chat history
@@ -243,8 +244,8 @@ def show_chat_page():
             # Save updated messages (if necessary)
             save_data(data)  # Assume save_data persists the data in your backend
 
-            # Clear the input field
-            st.session_state[f"message_{match_profile['id']}"] = ""
+            # Clear the message input by rendering it again with a blank string
+            message = ""  # Reset the message input field locally, Streamlit handles this automatically
         else:
             st.error("Please type a message.")
 
