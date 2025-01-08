@@ -147,7 +147,7 @@ def show_swipe_page():
         # Refresh profiles by resetting current index
         if st.button("Refresh Profiles"):
             st.session_state.current_index = 0  # Reset current index
-            st.experimental_rerun()  # Rerun the page to refresh the state
+            st.rerun()  # Rerun the page to refresh the state
 
     # Main swiping area
     # Filter out profiles already seen by the user
@@ -190,6 +190,7 @@ def show_swipe_page():
             st.write("No more profiles to swipe!")
     else:
         st.write("No profiles available.")
+
 
 
 
