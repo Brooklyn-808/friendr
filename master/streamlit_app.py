@@ -68,7 +68,7 @@ def display_profile(profile):
         if is_valid_image_url(picture_url):
             st.image(picture_url, width=300, caption="Profile Picture")
         else:
-            st.write("Invalid or inaccessible image URL.")
+            st.image("https://static.vecteezy.com/system/resources/previews/001/840/618/original/picture-profile-icon-male-icon-human-or-people-sign-and-symbol-free-vector.jpg", width=300, caption="Profile Picture")
         
         # Slideshow controls
         col1, col2 = st.columns(2)
