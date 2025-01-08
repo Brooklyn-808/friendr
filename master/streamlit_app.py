@@ -238,6 +238,15 @@ def show_chat_page():
     user_id = st.session_state.user_id
     chat_with = st.session_state.chat_with
     
+    # Check if the page needs to rerun every 2 seconds
+    if 'last_rerun_time' not in st.session_state:
+        st.session_state.last_rerun_time = time.time()
+
+    # Only trigger rerun every 2 seconds
+    if time.time() - st.session_state.last_rerun_time > 2:
+        st.session_state.last_rerun_time = time.time()
+        st.rerun()
+
     if user_id and chat_with:
         # Create a container to hold the messages, and update it dynamically
         message_container = st.empty()
@@ -275,9 +284,8 @@ def show_chat_page():
 
                 save_data(data)
             
-            # Refresh the page to update the chat
+            # Refresh the page every time a new message is sent
             st.rerun()
-
 
 
 # Main logic to switch between pages
