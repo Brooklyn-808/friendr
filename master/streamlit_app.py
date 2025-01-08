@@ -183,6 +183,11 @@ def show_liked_profiles():
 def show_notifications_page():
     st.title("Notifications")
     show_notifications()
+    
+    # Add a "Back" button to navigate back to the swipe page
+    if st.button("⬅️ Back"):
+        st.session_state.page = "swipe"
+
 
 # Routing logic
 if st.session_state.page == "home":
