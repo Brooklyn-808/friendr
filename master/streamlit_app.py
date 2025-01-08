@@ -112,7 +112,7 @@ if st.session_state.user_profile:
             justify-content: center;
             align-items: center;
             height: 400px;
-            transition: transform 0.5s ease;
+            position: relative;
         }
         .swipe-card {
             width: 300px;
@@ -124,6 +124,8 @@ if st.session_state.user_profile:
             flex-direction: column;
             justify-content: center;
             align-items: center;
+            transition: transform 0.5s ease;
+            position: absolute;
         }
         .dislike, .like {
             background-color: #f5f5f5;
@@ -153,9 +155,19 @@ if st.session_state.user_profile:
             </div>
         </div>
         <div style="display: flex; justify-content: center;">
-            <button class="dislike">👎 Dislike</button>
-            <button class="like">👍 Like</button>
+            <button class="dislike" onclick="swipeLeft()">👎 Dislike</button>
+            <button class="like" onclick="swipeRight()">👍 Like</button>
         </div>
+        <script>
+        function swipeLeft() {
+            const card = document.querySelector('.swipe-card');
+            card.style.transform = "translateX(-100vw)";  // Move card off screen to the left
+        }
+        function swipeRight() {
+            const card = document.querySelector('.swipe-card');
+            card.style.transform = "translateX(100vw)";  // Move card off screen to the right
+        }
+        </script>
         """.format(selected_profile["name"], selected_profile["age"], ", ".join(selected_profile["interests"]), selected_profile["bio"])
 
         st.markdown(swipe_script, unsafe_allow_html=True)
@@ -215,4 +227,3 @@ if st.session_state.user_profile:
             save_data(data)  # Save message
             st.session_state.chat_with = None  # Close the chat after sending the message
             st.experimental_rerun()  # Refresh the page
-
