@@ -76,7 +76,7 @@ if st.sidebar.button("Create/Edit Profile") or st.session_state.user_profile is 
         else:
             st.sidebar.error("Please fill in all required fields!")
 
-# Main app: Swipe functionality
+# Main app: Swipe functionality (Simulated with a swipeable animation)
 if st.session_state.user_profile:
     st.write("### Browse Friends")
     profiles = [p for p in data["profiles"] if p["name"] != st.session_state.user_profile["name"]]
@@ -93,24 +93,90 @@ if st.session_state.user_profile:
     if liked_by_others:
         st.info(f"You've been liked by: {', '.join(liked_by_others)}")
 
-    # Swipe functionality (simulated swipe with buttons)
-    if st.session_state.current_index < len(st.session_state.unseen_profiles):
-        profile = st.session_state.unseen_profiles[st.session_state.current_index]
-        display_profile(profile)
+    # Show the profiles as a slideshow
+    if st.session_state.unseen_profiles:
+        profile_names = [profile["name"] for profile in st.session_state.unseen_profiles]
+        selected_profile_name = st.radio("Choose a profile to view", profile_names)
 
+        # Get the profile that was selected
+        selected_profile = next(profile for profile in st.session_state.unseen_profiles if profile["name"] == selected_profile_name)
+        
+        # Display the profile
+        display_profile(selected_profile)
+
+        # Swiping animation logic using HTML, CSS, and JavaScript
+        swipe_script = """
+        <style>
+        .swipe-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 400px;
+            transition: transform 0.5s ease;
+        }
+        .swipe-card {
+            width: 300px;
+            height: 400px;
+            border-radius: 20px;
+            background-color: #fff;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+        .dislike, .like {
+            background-color: #f5f5f5;
+            padding: 20px;
+            border: none;
+            cursor: pointer;
+            border-radius: 10px;
+            width: 100px;
+            font-size: 16px;
+            transition: background-color 0.3s ease;
+        }
+        .dislike:hover {
+            background-color: #ff4d4d;
+            color: white;
+        }
+        .like:hover {
+            background-color: #4CAF50;
+            color: white;
+        }
+        </style>
+        <div class="swipe-container">
+            <div class="swipe-card">
+                <h3>{}</h3>
+                <p>Age: {}</p>
+                <p>Interests: {}</p>
+                <p>Bio: {}</p>
+            </div>
+        </div>
+        <div style="display: flex; justify-content: center;">
+            <button class="dislike">👎 Dislike</button>
+            <button class="like">👍 Like</button>
+        </div>
+        """.format(selected_profile["name"], selected_profile["age"], ", ".join(selected_profile["interests"]), selected_profile["bio"])
+
+        st.markdown(swipe_script, unsafe_allow_html=True)
+
+        # Button for swiping left or right (simulate swipe)
         col1, col2 = st.columns(2)
         with col1:
             if st.button("👎 Dislike"):
                 # Simulate swipe left (dislike)
-                st.session_state.current_index += 1
+                st.session_state.unseen_profiles.remove(selected_profile)
+                save_data(data)
         with col2:
             if st.button("👍 Like"):
                 # Simulate swipe right (like)
                 if user not in data["likes"]:
                     data["likes"][user] = []
-                data["likes"][user].append(profile["name"])
+                data["likes"][user].append(selected_profile["name"])
+                st.session_state.unseen_profiles.remove(selected_profile)
                 save_data(data)  # Save data after liking a profile
-                st.session_state.current_index += 1
+
+        st.session_state.current_index += 1
     else:
         st.write("No more profiles to swipe! 😔")
         if st.button("🔄 Refresh Profiles"):
@@ -136,21 +202,17 @@ if st.session_state.user_profile:
     # Handle the chat functionality
     if st.session_state.chat_with:
         st.write(f"### Chat with {st.session_state.chat_with}")
-        chat_key = tuple(sorted([user, st.session_state.chat_with]))
+        chat_key = f"{user}_to_{st.session_state.chat_with}"
         if chat_key not in data["messages"]:
             data["messages"][chat_key] = []
+        messages = data["messages"][chat_key]
+        for msg in messages:
+            st.write(msg)
 
-        # Display chat messages
-        for message in data["messages"][chat_key]:
-            sender, text = message
-            st.write(f"**{sender}:** {text}")
+        message_input = st.text_input("Your message:", key="message_input")
+        if st.button("Send Message") and message_input:
+            data["messages"][chat_key].append(f"{user}: {message_input}")
+            save_data(data)  # Save message
+            st.session_state.chat_with = None  # Close the chat after sending the message
+            st.experimental_rerun()  # Refresh the page
 
-        # Send a new message
-        new_message = st.text_input("Write a message:")
-        if st.button("Send"):
-            if new_message:
-                data["messages"][chat_key].append((user, new_message))
-                save_data(data)  # Save messages after sending
-                st.success("Message sent!")
-else:
-    st.write("Please create your profile to start swiping.")
