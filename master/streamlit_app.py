@@ -229,17 +229,30 @@ def show_notifications_page():
         for i, notification in enumerate(notifications):
             st.write(f"{i + 1}. {notification}")
 
+import streamlit as st
+import time
+
 # Chat Page
 def show_chat_page():
     st.title(f"Chat with {st.session_state.chat_with}")
     user_id = st.session_state.user_id
     chat_with = st.session_state.chat_with
+    
     if user_id and chat_with:
-        messages = data["messages"].get(user_id, {}).get(chat_with, [])
-        for message in messages:
-            st.write(message)
+        # Create a container to hold the messages, and update it dynamically
+        message_container = st.empty()
         
+        # Function to display messages in the container
+        def display_messages():
+            messages = data["messages"].get(user_id, {}).get(chat_with, [])
+            for message in messages:
+                st.write(message)
+        
+        display_messages()
+
+        # Input for new messages
         new_message = st.text_input("Write your message...", key="new_message")
+
         if st.button("Send"):
             if new_message:
                 if user_id not in data["messages"]:
@@ -247,13 +260,22 @@ def show_chat_page():
                 if chat_with not in data["messages"][user_id]:
                     data["messages"][user_id][chat_with] = []
                 data["messages"][user_id][chat_with].append(new_message)
+
                 if chat_with not in data["messages"]:
                     data["messages"][chat_with] = {}
                 if user_id not in data["messages"][chat_with]:
                     data["messages"][chat_with][user_id] = []
                 data["messages"][chat_with][user_id].append(new_message)
+
                 save_data(data)
-                st.experimental_rerun()  # Refresh chat
+            
+        # Update messages periodically
+        while True:
+            display_messages()
+            time.sleep(3)  # Update every 3 seconds
+            message_container.empty()  # Clear and refresh message container
+
+
 
 # Main logic to switch between pages
 if st.session_state.page == "home":
