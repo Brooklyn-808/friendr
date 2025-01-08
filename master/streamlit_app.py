@@ -2,7 +2,7 @@ import streamlit as st
 import uuid
 import json
 import os
-import time  # For delay
+import time
 
 # File to store user profiles and messages
 DATA_FILE = "profiles.json"
@@ -33,9 +33,17 @@ if "current_index" not in st.session_state:
 if "chat_with" not in st.session_state:
     st.session_state.chat_with = None
 
-# Helper function to display a profile
+# Helper function to display a profile with multiple images
 def display_profile(profile):
-    st.image("https://via.placeholder.com/400", width=300, caption="Profile Picture")
+    # Show profile images as a slideshow
+    image_urls = profile.get("image_urls", [])
+    if image_urls:
+        for i, url in enumerate(image_urls):
+            st.image(url, width=300, caption=f"Profile Picture {i + 1}")
+            time.sleep(5)
+    else:
+        st.image("https://via.placeholder.com/400", width=300, caption="Profile Picture")
+    
     st.write(f"### {profile['name']} ({profile['age']} years old)")
     st.write(f"**Interests:** {', '.join(profile['interests'])}")
     st.write(f"**Bio:** {profile['bio']}")
@@ -59,156 +67,73 @@ def show_notifications():
 
 # Home Page
 def show_home_page():
-    st.title("Friendr 👋")
-    st.subheader("Welcome to Friendr!")
-    st.write("Find a clique with a click!")
-    
-    if st.button("Login / Sign Up"):
-        st.session_state.page = "login"  # Navigate to the login page
-
-# Login/Sign-Up Page
-def show_login_page():
-    st.title("Login / Sign-Up")
-    st.write("Please log in or sign up to continue.")
-    
-    user_name = st.text_input("Username", key="login_username")
-    password = st.text_input("Password", type="password", key="login_password")
-    
+    st.title("Welcome to the Chat App!")
     if st.button("Login"):
-        user = next((u for u in data["profiles"] if u["name"] == user_name), None)
-        if user:
-            if user.get("password") == password:
-                st.session_state.user_id = user["id"]
-                st.session_state.page = "swipe"  # Navigate to swipe page
-                st.success("Logged in successfully!")
-            else:
-                st.error("Incorrect password.")
-        else:
-            st.error("User not found.")
+        st.session_state.page = "login"
 
-    if st.button("Sign Up"):
-        if user_name and password:
-            new_user_id = str(uuid.uuid4())
-            new_user = {
-                "id": new_user_id,
-                "name": user_name,
-                "password": password,
-                "age": 18,
-                "interests": [],
-                "bio": "",
-            }
-            data["profiles"].append(new_user)
-            save_data(data)
-            st.session_state.user_id = new_user_id
-            st.session_state.page = "swipe"
-            st.success("Sign-up successful!")
-        else:
-            st.error("Please fill in both fields.")
+# Login Page
+def show_login_page():
+    st.title("Login")
+    user_id = st.text_input("Enter your user ID")
+    if user_id and user_id not in [profile['id'] for profile in data["profiles"]]:
+        st.error("User ID does not exist.")
+    elif user_id:
+        st.session_state.user_id = user_id
+        st.session_state.page = "swipe"
 
-# Profile and Swiping Page
+# Swipe Page (where users browse profiles)
 def show_swipe_page():
-    st.title("Friendr 👋")
-    user_id = st.session_state.user_id
-    user_profile = next((p for p in data["profiles"] if p["id"] == user_id), None)
+    st.title("Swipe through Profiles")
+    show_notifications()  # Show notifications on the sidebar
     
-    if not user_profile:
-        st.error("User profile not found.")
-        return
+    user_id = st.session_state.user_id
+    profiles = data["profiles"]
+    current_index = st.session_state.current_index
 
-    # Sidebar for editing profile and navigation
-    with st.sidebar:
-        st.title("Your Profile")
-        user_name = st.text_input("Name", user_profile["name"], key="profile_name")
-        user_age = st.number_input("Age", min_value=13, max_value=100, value=user_profile.get("age", 18), key="profile_age")
-        user_interests = st.text_input("Interests (comma-separated)", ", ".join(user_profile["interests"]), key="profile_interests")
-        user_bio = st.text_area("Bio", user_profile.get("bio", ""), key="profile_bio")
+    if current_index < len(profiles):
+        profile = profiles[current_index]
+        display_profile(profile)
         
-        if st.button("Save Profile"):
-            user_profile.update({
-                "name": user_name,
-                "age": user_age,
-                "interests": [i.strip() for i in user_interests.split(",")],
-                "bio": user_bio,
-            })
+        if st.button("Like"):
+            if user_id not in data["likes"]:
+                data["likes"][user_id] = []
+            data["likes"][user_id].append(profile["id"])
             save_data(data)
-            st.success("Profile updated!")
-
-        if st.button("Logout"):
-            st.session_state.user_id = None
-            st.session_state.page = "home"  # Navigate to home page
         
-        if st.button("Liked Profiles"):
-            st.session_state.page = "liked_profiles"  # Navigate to liked profiles
+        if st.button("Pass"):
+            st.session_state.current_index += 1
         
-        if st.button("Notifications"):
-            st.session_state.page = "notifications"  # Navigate to notifications
-
-    # Main swiping area
-    profiles = [p for p in data["profiles"] if p["id"] != user_id]
-    if profiles:
-        if st.session_state.current_index < len(profiles):
-            profile = profiles[st.session_state.current_index]
-            display_profile(profile)
-            
-            col1, col2 = st.columns(2)
-            with col1:
-                if st.button("👍 Like", key=f"like_{st.session_state.current_index}"):
-                    if user_id not in data["likes"]:
-                        data["likes"][user_id] = []
-                    data["likes"][user_id].append(profile["id"])
-                    if profile["id"] not in data["notifications"]:
-                        data["notifications"][profile["id"]] = []
-                    data["notifications"][profile["id"]].append(f"{user_profile['name']} liked your profile!")
-                    save_data(data)
-                    st.session_state.current_index += 1
-            with col2:
-                if st.button("👎 Skip", key=f"skip_{st.session_state.current_index}"):
-                    st.session_state.current_index += 1
-        else:
-            st.write("No more profiles to swipe!")
     else:
-        st.write("No profiles available.")
+        st.write("No more profiles to view.")
+    
+    if st.button("View Liked Profiles"):
+        st.session_state.page = "liked_profiles"
 
 # Liked Profiles Page
 def show_liked_profiles():
-    st.title("Liked Profiles")
-    show_back_button()  # Back button
-
+    st.title("Your Liked Profiles")
+    show_back_button()
+    
     user_id = st.session_state.user_id
-    liked_profiles = [p for p in data["profiles"] if p["id"] in data["likes"].get(user_id, [])]
+    liked_profiles = data["likes"].get(user_id, [])
     
     if liked_profiles:
-        for profile in liked_profiles:
-            st.write("---")
-            display_profile(profile)
-            if st.button(f"Chat with {profile['name']}", key=f"chat_{profile['id']}"):
-                st.session_state.chat_with = profile['id']
-                st.session_state.page = "chat"  # Navigate to chat page
+        for liked_id in liked_profiles:
+            profile = next((p for p in data["profiles"] if p["id"] == liked_id), None)
+            if profile:
+                display_profile(profile)
+                if st.button(f"Chat with {profile['name']}"):
+                    st.session_state.chat_with = profile["id"]
+                    st.session_state.page = "chat"
     else:
         st.write("You haven't liked any profiles yet.")
 
 # Notifications Page
 def show_notifications_page():
     st.title("Notifications")
-    show_back_button()  # Back button
-
     show_notifications()
 
-    user_id = st.session_state.user_id
-    if user_id and user_id in data["notifications"]:
-        notifications = data["notifications"][user_id]
-        for notification in notifications:
-            # Navigate to chat with the person from the notification
-            if "liked your profile" in notification:
-                match_id = notification.split(" ")[0]  # Assuming format: "Username liked your profile"
-                if st.button(f"Chat with {match_id}", key=f"chat_{match_id}"):
-                    st.session_state.chat_with = match_id
-                    st.session_state.page = "chat"  # Navigate to chat page
-# Ensure session state is initialized
-if "messages" not in st.session_state:
-    st.session_state.messages = {}
-
-
+# Chat Page
 def show_chat_page():
     st.title("Chat with Matches")
     show_back_button()  # Function for the back button (if necessary)
@@ -262,39 +187,23 @@ def show_chat_page():
         else:
             st.error("Please type a message.")
     
-    # **NEW**: Check for new messages from the other person every 5 seconds
-    while True:
-        new_message = check_for_other_persons_message(match_profile["id"])
-        if new_message:
-            # Append the new message from the other person to the chat history
-            if new_message not in chat_history:
-                st.session_state.messages[match_profile["id"]].append(f"{match_profile['name']}: {new_message}")
-                
-                # Save updated messages (if necessary)
-                save_data(data)  # Assume save_data persists the data in your backend
-            else:
-                st.info("No new message from the other person.")
-        
-        # After checking for new messages, update the chat container and wait for 5 seconds
-        chat_history = st.session_state.messages[match_profile["id"]]
-        chat_text = "\n".join(chat_history)
-        chat_key = f"chat_display_{match_profile['id']}_{uuid.uuid4().hex}"
-        chat_container.text_area("Chat History", value=chat_text, height=300, max_chars=None, key=chat_key, disabled=True)
+    # Check for new messages from the other person every 5 seconds
+    if st.session_state.chat_with:
+        check_for_other_persons_message(match_profile["id"])
 
-        # Wait for 5 seconds before checking again
-        time.sleep(5)
-
-    
 def check_for_other_persons_message(match_profile_id):
-    # This is a placeholder for checking if there is a new message from the other person
-    # For now, let's assume we get a new message whenever we check
+    # This function checks if there is a new message from the other person
     if match_profile_id in data["messages"]:
         chat_history = data["messages"][match_profile_id]
         if len(chat_history) > 1:  # Check if there are multiple messages
             # Assume the last message is from the other person
-            return chat_history[-1]  # Return the last message as the new message
-    return None
-
+            new_message = chat_history[-1]
+            if new_message not in st.session_state.messages[match_profile_id]:
+                # Append the new message from the other person
+                st.session_state.messages[match_profile_id].append(new_message)
+                save_data(data)  # Persist the new message
+                st.experimental_rerun()  # This ensures the display updates without triggering a complete rerun.
+    
 # Routing logic
 if st.session_state.page == "home":
     show_home_page()
