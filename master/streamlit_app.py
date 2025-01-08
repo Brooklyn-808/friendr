@@ -98,6 +98,9 @@ def show_login_page():
             st.success("Sign-up successful!")
         else:
             st.error("Please fill in both fields.")
+# Initialize seen profiles
+if "seen_profiles" not in st.session_state:
+    st.session_state.seen_profiles = []
 
 # Profile and Swiping Page
 def show_swipe_page():
@@ -138,7 +141,13 @@ def show_swipe_page():
             st.session_state.page = "notifications"  # Navigate to notifications
 
     # Main swiping area
-    profiles = [p for p in data["profiles"] if p["id"] != user_id]
+    profiles = [p for p in data["profiles"] if p["id"] != user_id and p["id"] not in st.session_state.seen_profiles]
+    
+    # Refresh profiles button
+    if st.button("🔄 Refresh Profiles"):
+        st.session_state.seen_profiles = []  # Reset seen profiles to see all available profiles again
+        st.experimental_rerun()
+
     if profiles:
         if st.session_state.current_index < len(profiles):
             profile = profiles[st.session_state.current_index]
@@ -146,7 +155,7 @@ def show_swipe_page():
             
             col1, col2 = st.columns(2)
             with col1:
-                if st.button("👍 Like", key=f"like_{st.session_state.current_index}"):
+                if st.button("👍 Like", key=f"like_{profile['id']}"):
                     if user_id not in data["likes"]:
                         data["likes"][user_id] = []
                     data["likes"][user_id].append(profile["id"])
@@ -154,9 +163,11 @@ def show_swipe_page():
                         data["notifications"][profile["id"]] = []
                     data["notifications"][profile["id"]].append(f"{user_profile['name']} liked your profile!")
                     save_data(data)
+                    st.session_state.seen_profiles.append(profile["id"])  # Mark this profile as seen
                     st.session_state.current_index += 1
             with col2:
-                if st.button("👎 Skip", key=f"skip_{st.session_state.current_index}"):
+                if st.button("👎 Skip", key=f"skip_{profile['id']}"):
+                    st.session_state.seen_profiles.append(profile["id"])  # Mark this profile as seen
                     st.session_state.current_index += 1
         else:
             st.write("No more profiles to swipe!")
