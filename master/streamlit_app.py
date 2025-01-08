@@ -55,7 +55,7 @@ def show_notifications():
 def show_home_page():
     st.title("Friendr 👋")
     st.subheader("Welcome to Friendr!")
-    st.write("Swipe, match, and chat with new friends!")
+    st.write("Find a clique with a click!")
     
     if st.button("Login / Sign Up"):
         st.session_state.page = "login"  # Navigate to the login page
@@ -163,7 +163,6 @@ def show_swipe_page():
     else:
         st.write("No profiles available.")
 
-# Liked Profiles Page
 def show_liked_profiles():
     st.title("Liked Profiles")
     user_id = st.session_state.user_id
@@ -175,6 +174,10 @@ def show_liked_profiles():
             display_profile(profile)
     else:
         st.write("You haven't liked any profiles yet.")
+    
+    # Add a "Back" button to navigate back to the swipe page
+    if st.button("⬅️ Back"):
+        st.session_state.page = "swipe"
 
 # Notifications Page
 def show_notifications_page():
