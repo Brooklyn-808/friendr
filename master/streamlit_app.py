@@ -143,10 +143,13 @@ def show_swipe_page():
     # Main swiping area
     profiles = [p for p in data["profiles"] if p["id"] != user_id and p["id"] not in st.session_state.seen_profiles]
     
-    # Refresh profiles button
+        # Refresh profiles button
+        # Refresh profiles button
     if st.button("🔄 Refresh Profiles"):
-        st.session_state.seen_profiles = []  # Reset seen profiles to see all available profiles again
-        st.experimental_rerun()
+        # Clear seen profiles
+        st.session_state.seen_profiles = []
+        st.session_state.current_index = 0  # Reset index to start from the beginning
+        st.session_state.page = "swipe"  # Ensure it stays on the swipe page
 
     if profiles:
         if st.session_state.current_index < len(profiles):
