@@ -7,6 +7,9 @@ import time  # For delay
 # File to store user profiles and messages
 DATA_FILE = "profiles.json"
 
+import os
+
+api_key = os.getenv("API_KEY")
 # Initialize ChatOpenAI model with skip_on_failure in model_kwargs
 chat_omodel = ChatOpenAI(
     openai_api_key="",  # Make sure to use a valid OpenAI API key
