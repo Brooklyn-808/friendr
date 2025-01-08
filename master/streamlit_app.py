@@ -323,6 +323,7 @@ def show_chat_page():
                 data["messages"][chat_with][user_id].append(new_message)
 
                 save_data(data)
+        display_messages()
 
 
 # Main logic to switch between pages
