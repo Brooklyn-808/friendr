@@ -25,7 +25,13 @@ def omodel(pod):
   return response.content
 
 def safe(msg):
-    return (omodel(f"You are an API made to check if messages could be offensive to people, given this message: '{msg}' either return 'True' if it is safe or 'False' if otherwise") == "True")
+    prompt = (
+        f"You are an API made to check if messages could be offensive to people. "
+        f"Given this message: '{msg}', either return 'True' if it is safe or 'False' if otherwise."
+    )
+    response = omodel(prompt).strip().lower()  # Normalize the response
+    return response == "true"
+
 
 
 
