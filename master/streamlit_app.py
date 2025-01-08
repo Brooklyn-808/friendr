@@ -38,7 +38,7 @@ if "chat_with" not in st.session_state:
 if "last_refresh" not in st.session_state:
     st.session_state.last_refresh = 0
 
-# Function to display a single profile
+# Function to display a single profile card
 def display_profile(profile):
     st.image("https://via.placeholder.com/400", width=300, caption="Profile Picture")
     st.write(f"### {profile['name']} ({profile['age']} years old)")
@@ -93,7 +93,7 @@ if st.session_state.user_profile:
     if liked_by_others:
         st.info(f"You've been liked by: {', '.join(liked_by_others)}")
 
-    # Swipe functionality
+    # Swipe functionality (simulated swipe with buttons)
     if st.session_state.current_index < len(st.session_state.unseen_profiles):
         profile = st.session_state.unseen_profiles[st.session_state.current_index]
         display_profile(profile)
@@ -101,11 +101,11 @@ if st.session_state.user_profile:
         col1, col2 = st.columns(2)
         with col1:
             if st.button("👎 Dislike"):
-                # Save skip action to JSON
+                # Simulate swipe left (dislike)
                 st.session_state.current_index += 1
         with col2:
             if st.button("👍 Like"):
-                # Save like to JSON
+                # Simulate swipe right (like)
                 if user not in data["likes"]:
                     data["likes"][user] = []
                 data["likes"][user].append(profile["name"])
