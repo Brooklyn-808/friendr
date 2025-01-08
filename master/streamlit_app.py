@@ -208,6 +208,7 @@ def show_notifications_page():
 if "messages" not in st.session_state:
     st.session_state.messages = {}
 
+
 def show_chat_page():
     st.title("Chat with Matches")
     show_back_button()  # Function for the back button (if necessary)
@@ -233,8 +234,10 @@ def show_chat_page():
     chat_history = st.session_state.messages[match_profile["id"]]
     chat_text = "\n".join(chat_history)  # Join messages with newline to display
     
-    # Use a unique key for each chat container
-    chat_container.text_area("Chat History", value=chat_text, height=300, max_chars=None, key=f"chat_display_{match_profile['id']}", disabled=True)
+    # Use a truly unique key by appending a UUID
+    chat_key = f"chat_display_{match_profile['id']}_{uuid.uuid4().hex}"
+    
+    chat_container.text_area("Chat History", value=chat_text, height=300, max_chars=None, key=chat_key, disabled=True)
     
     # Check if we already have a value for the message in the session state
     message_key = f"message_{match_profile['id']}"
@@ -275,7 +278,8 @@ def show_chat_page():
         # After checking for new messages, update the chat container and wait for 5 seconds
         chat_history = st.session_state.messages[match_profile["id"]]
         chat_text = "\n".join(chat_history)
-        chat_container.text_area("Chat History", value=chat_text, height=300, max_chars=None, key=f"chat_display_{match_profile['id']}", disabled=True)
+        chat_key = f"chat_display_{match_profile['id']}_{uuid.uuid4().hex}"
+        chat_container.text_area("Chat History", value=chat_text, height=300, max_chars=None, key=chat_key, disabled=True)
 
         # Wait for 5 seconds before checking again
         time.sleep(5)
