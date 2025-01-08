@@ -171,6 +171,8 @@ def show_swipe_page():
 # Liked Profiles Page
 def show_liked_profiles():
     st.title("Liked Profiles")
+    show_back_button()  # Back button
+
     user_id = st.session_state.user_id
     liked_profiles = [p for p in data["profiles"] if p["id"] in data["likes"].get(user_id, [])]
     
@@ -184,11 +186,15 @@ def show_liked_profiles():
 # Notifications Page
 def show_notifications_page():
     st.title("Notifications")
+    show_back_button()  # Back button
+
     show_notifications()
 
 # Chat Page
 def show_chat_page():
     st.title("Chat with Matches")
+    show_back_button()  # Back button
+    
     user_id = st.session_state.user_id
     user_profile = next((p for p in data["profiles"] if p["id"] == user_id), None)
     
