@@ -235,8 +235,8 @@ def show_chat_page():
             data["messages"][match_profile["id"]].append(f"{user_profile['name']}: {message}")
             save_data(data)  # Save the updated data with the new message
 
-            # Show the new message right away without needing to rerun the page
-            st.experimental_rerun()  # Refresh the page to update chat (can be replaced with alternative)
+            # Update session state to refresh chat page
+            st.session_state.refresh_chat = True  # Flag to refresh chat
 
         else:
             st.error("Please type a message.")
@@ -248,8 +248,15 @@ def show_chat_page():
         if new_message not in chat_history:
             data["messages"][match_profile["id"]].append(f"{match_profile['name']}: {new_message}")
             save_data(data)  # Save the updated data with the new received message
-            st.experimental_rerun()  # Refresh the page to show the new message
 
+            # Update session state to refresh chat page
+            st.session_state.refresh_chat = True  # Flag to refresh chat
+
+    # If the page needs to be refreshed (new message or send), reload the page
+    if "refresh_chat" in st.session_state and st.session_state.refresh_chat:
+        st.session_state.refresh_chat = False  # Reset flag
+        st.experimental_rerun()  # This is now working as expected
+        
 
 # Helper function to check for received messages
 def check_for_other_persons_message(match_profile_id):
@@ -262,9 +269,6 @@ def check_for_other_persons_message(match_profile_id):
             # Return the last message as the "new" message from the other person
             return chat_history[-1]
     return None
-
-
-
 
         
 # Routing logic
