@@ -35,12 +35,31 @@ if "chat_with" not in st.session_state:
 if "current_picture" not in st.session_state:
     st.session_state.current_picture = 0
 
+import requests
+
+# Helper function to check if the URL is a valid image URL
+def is_valid_image_url(url):
+    try:
+        response = requests.head(url, allow_redirects=True)
+        # Check if the URL is reachable and the content type is an image
+        if response.status_code == 200 and "image" in response.headers.get("Content-Type", "").lower():
+            return True
+    except requests.RequestException:
+        pass
+    return False
+
 # Helper function to display a profile
 def display_profile(profile):
     # Display profile pictures as a slideshow if available
     if "profile_pictures" in profile and profile["profile_pictures"]:
         current_picture = st.session_state.get("current_picture", 0)
-        st.image(profile["profile_pictures"][current_picture], width=300, caption="Profile Picture")
+        picture_url = profile["profile_pictures"][current_picture]
+        
+        # Check if the URL is valid and the image is accessible
+        if is_valid_image_url(picture_url):
+            st.image(picture_url, width=300, caption="Profile Picture")
+        else:
+            st.write("Invalid or inaccessible image URL.")
         
         # Slideshow controls
         col1, col2 = st.columns(2)
@@ -56,6 +75,7 @@ def display_profile(profile):
     st.write(f"### {profile['name']} ({profile['age']} years old)")
     st.write(f"**Interests:** {', '.join(profile['interests'])}")
     st.write(f"**Bio:** {profile['bio']}")
+
 
 # Back Button
 def show_back_button():
