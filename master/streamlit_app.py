@@ -242,11 +242,17 @@ def show_chat_page():
         # Create a container to hold the messages, and update it dynamically
         message_container = st.empty()
         
-        # Function to display messages in the container
+        # Function to display messages in a scrollable box
         def display_messages():
             messages = data["messages"].get(user_id, {}).get(chat_with, [])
-            for message in messages:
-                st.write(message)
+            message_text = "\n".join(messages)  # Join messages with a newline
+            
+            # Use markdown with custom CSS for scrollable box
+            st.markdown(f"""
+                <div style="max-height: 300px; overflow-y: scroll; border: 1px solid #ccc; padding: 10px; background-color: #f9f9f9;">
+                    <pre>{message_text}</pre>
+                </div>
+            """, unsafe_allow_html=True)
         
         display_messages()
 
@@ -274,6 +280,7 @@ def show_chat_page():
             display_messages()
             time.sleep(3)  # Update every 3 seconds
             message_container.empty()  # Clear and refresh message container
+
 
 
 
