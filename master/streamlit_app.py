@@ -1,10 +1,10 @@
 import streamlit as st
 import json
 import os
+import uuid
 import time
-import uuid  # To generate unique IDs
 
-# File to store user profiles, likes, and messages
+# File to store user profiles and messages
 DATA_FILE = "profiles.json"
 
 # Load profiles from JSON
@@ -23,154 +23,133 @@ def save_data(data):
 # Initialize data
 data = load_data()
 
-# App title
-st.title("Friendr 👋")
-st.subheader("Swipe, Match, and Chat with New Friends!")
-
-# Check if the user has created a profile
-if "user_profile" not in st.session_state:
-    st.session_state.user_profile = None
-if "unseen_profiles" not in st.session_state:
-    st.session_state.unseen_profiles = []
+# Initialize session state variables
+if "user_id" not in st.session_state:
+    st.session_state.user_id = None
+if "logged_in" not in st.session_state:
+    st.session_state.logged_in = False
 if "current_index" not in st.session_state:
     st.session_state.current_index = 0
 if "chat_with" not in st.session_state:
     st.session_state.chat_with = None
-if "last_refresh" not in st.session_state:
-    st.session_state.last_refresh = 0
-if "user_id" not in st.session_state:
-    st.session_state.user_id = None
 
-# Function to display a single profile
+# Helper function to display a profile
 def display_profile(profile):
     st.image("https://via.placeholder.com/400", width=300, caption="Profile Picture")
     st.write(f"### {profile['name']} ({profile['age']} years old)")
     st.write(f"**Interests:** {', '.join(profile['interests'])}")
     st.write(f"**Bio:** {profile['bio']}")
 
-# Profile creation/edit sidebar
-if st.sidebar.button("Create/Edit Profile") or st.session_state.user_profile is None:
-    st.sidebar.title("Create/Edit Your Profile")
-    user_name = st.sidebar.text_input("Your Name", st.session_state.user_profile["name"] if st.session_state.user_profile else "")
-    user_age = st.sidebar.number_input("Your Age", min_value=13, max_value=100, value=18)
-    user_interests = st.sidebar.text_input("Your Interests (comma-separated)", 
-                                           ", ".join(st.session_state.user_profile["interests"]) if st.session_state.user_profile else "")
-    user_bio = st.sidebar.text_area("Your Bio", st.session_state.user_profile["bio"] if st.session_state.user_profile else "")
+# Home Page
+def show_home_page():
+    st.title("Friendr 👋")
+    st.subheader("Welcome to Friendr!")
+    st.write("Swipe, match, and chat with new friends!")
+    if st.button("Login / Sign Up"):
+        st.session_state.logged_in = False
 
-    if st.sidebar.button("Save Profile"):
-        if user_name and user_interests:
-            # Generate a unique ID if it's the user's first time
-            if st.session_state.user_id is None:
-                st.session_state.user_id = str(uuid.uuid4())  # Generate a unique ID
+# Login/Sign-Up Page
+def show_login_page():
+    st.title("Login / Sign-Up")
+    st.write("Please log in or sign up to continue.")
+    
+    user_name = st.text_input("Username")
+    password = st.text_input("Password", type="password")
+    
+    if st.button("Login"):
+        # Find user by username
+        user = next((u for u in data["profiles"] if u["name"] == user_name), None)
+        if user:
+            # Simple password check (In production, hash passwords!)
+            if user.get("password") == password:
+                st.session_state.user_id = user["id"]
+                st.session_state.logged_in = True
+                st.success("Logged in successfully!")
+            else:
+                st.error("Incorrect password. Please try again.")
+        else:
+            st.error("User not found. Please sign up first.")
+    
+    if st.button("Sign Up"):
+        if user_name and password:
+            new_user_id = str(uuid.uuid4())
+            new_user = {
+                "id": new_user_id,
+                "name": user_name,
+                "password": password,
+                "age": 18,  # Default age
+                "interests": [],
+                "bio": "",
+            }
+            data["profiles"].append(new_user)
+            save_data(data)
+            st.session_state.user_id = new_user_id
+            st.session_state.logged_in = True
+            st.success("Sign-up successful! You are now logged in.")
+        else:
+            st.error("Please fill in both fields.")
 
-            st.session_state.user_profile = {
-                "id": st.session_state.user_id,  # Store the unique ID
+# Profile and Swiping Page
+def show_main_page():
+    st.title("Friendr 👋")
+    user_id = st.session_state.user_id
+    user_profile = next((p for p in data["profiles"] if p["id"] == user_id), None)
+    
+    if not user_profile:
+        st.error("User profile not found. Please log out and sign up again.")
+        return
+    
+    # Sidebar for editing profile
+    with st.sidebar:
+        st.title("Your Profile")
+        user_name = st.text_input("Name", user_profile["name"])
+        user_age = st.number_input("Age", min_value=13, max_value=100, value=user_profile.get("age", 18))
+        user_interests = st.text_input("Interests (comma-separated)", ", ".join(user_profile["interests"]))
+        user_bio = st.text_area("Bio", user_profile.get("bio", ""))
+        
+        if st.button("Save Profile"):
+            user_profile.update({
                 "name": user_name,
                 "age": user_age,
                 "interests": [i.strip() for i in user_interests.split(",")],
                 "bio": user_bio,
-            }
-            # Add or update the user profile in the global profiles list
-            user_found = False
-            for profile in data["profiles"]:
-                if profile["id"] == st.session_state.user_id:
-                    profile.update(st.session_state.user_profile)
-                    user_found = True
-                    break
-            if not user_found:
-                data["profiles"].append(st.session_state.user_profile)
-            save_data(data)  # Save data after profile creation/edit
-            st.sidebar.success("Profile saved!")
+            })
+            save_data(data)
+            st.success("Profile updated!")
+
+        if st.button("Logout"):
+            st.session_state.user_id = None
+            st.session_state.logged_in = False
+            st.experimental_rerun()
+
+    # Main swiping area
+    st.write("### Browse Profiles")
+    profiles = [p for p in data["profiles"] if p["id"] != user_id]
+    if profiles:
+        if st.session_state.current_index < len(profiles):
+            profile = profiles[st.session_state.current_index]
+            display_profile(profile)
+            
+            col1, col2 = st.columns(2)
+            with col1:
+                if st.button("👍 Like"):
+                    if user_id not in data["likes"]:
+                        data["likes"][user_id] = []
+                    data["likes"][user_id].append(profile["id"])
+                    save_data(data)
+                    st.session_state.current_index += 1
+            with col2:
+                if st.button("👎 Skip"):
+                    st.session_state.current_index += 1
         else:
-            st.sidebar.error("Please fill in all required fields!")
-
-# Main app: Swipe functionality
-if st.session_state.user_profile:
-    st.write("### Browse Friends")
-    profiles = [p for p in data["profiles"] if p["id"] != st.session_state.user_profile["id"]]  # Use ID instead of name
-
-    # Update unseen_profiles list with new profiles
-    unseen_ids = {p["id"] for p in profiles}
-    seen_ids = {p["id"] for p in st.session_state.unseen_profiles}
-    liked_ids = {id for id, liked_users in data["likes"].items() if st.session_state.user_id in liked_users}
-
-    # Make sure to exclude liked or already seen profiles
-    new_profiles = unseen_ids - seen_ids - liked_ids
-    st.session_state.unseen_profiles += [p for p in profiles if p["id"] in new_profiles]
-
-    # Check if someone liked the user
-    user = st.session_state.user_profile["id"]
-    liked_by_others = [u for u, liked_users in data["likes"].items() if user in liked_users]
-    if liked_by_others:
-        st.info(f"You've been liked by: {', '.join(liked_by_others)}")
-
-    # Swipe functionality
-    if st.session_state.current_index < len(st.session_state.unseen_profiles):
-        profile = st.session_state.unseen_profiles[st.session_state.current_index]
-        display_profile(profile)
-
-        col1, col2 = st.columns(2)
-        with col1:
-            if st.button("👍 Like"):
-                # Save like to JSON
-                if user not in data["likes"]:
-                    data["likes"][user] = []
-                data["likes"][user].append(profile["id"])  # Use ID instead of name
-                save_data(data)  # Save data after liking a profile
-                st.session_state.current_index += 1
-        with col2:
-            if st.button("👎 Skip"):
-                st.session_state.current_index += 1
+            st.write("No more profiles to swipe!")
     else:
-        st.write("No more profiles to swipe! 😔")
-        if st.button("🔄 Refresh Profiles"):
-            # Cooldown: Allow refresh only if 5 seconds have passed since the last refresh
-            current_time = time.time()
-            if current_time - st.session_state.last_refresh >= 5:
-                st.session_state.last_refresh = current_time
-                st.session_state.current_index = 0
-                st.session_state.unseen_profiles = [p for p in profiles if p["id"] not in seen_ids and p["id"] not in liked_ids]
-                st.success("Profiles refreshed! 🎉")
-            else:
-                st.warning("Please wait 5 seconds before refreshing again.")
+        st.write("No profiles available.")
 
-    # Check if there's a mutual like to start chat
-    if user in data["likes"]:
-        mutual_matches = [u for u in data["likes"][user] if user in data["likes"].get(u, [])]
-        if mutual_matches:
-            st.write("### Mutual Matches")
-            for match in mutual_matches:
-                if st.button(f"Chat with {match}"):
-                    st.session_state.chat_with = match
-
-    # Handle the chat functionality
-    if st.session_state.chat_with:
-        st.write(f"### Chat with {st.session_state.chat_with}")
-        chat_key = tuple(sorted([user, st.session_state.chat_with]))  # Unique chat key for this pair
-
-        # Initialize the chat if not already present
-        if chat_key not in data["messages"]:
-            data["messages"][chat_key] = []
-
-        # Display chat messages
-        for message in data["messages"][chat_key]:
-            sender, text = message
-            st.write(f"**{sender}:** {text}")
-
-        # Send a new message
-        new_message = st.text_input("Write a message:")
-        if st.button("Send"):
-            if new_message:
-                # Append the message to both users' chat
-                data["messages"][chat_key].append((user, new_message))
-                # Also append to the reverse chat
-                reverse_chat_key = tuple(sorted([st.session_state.chat_with, user]))
-                if reverse_chat_key not in data["messages"]:
-                    data["messages"][reverse_chat_key] = []
-                data["messages"][reverse_chat_key].append((user, new_message))
-
-                save_data(data)  # Save messages after sending
-                st.success("Message sent!")
-                st.experimental_rerun()  # Refresh the page to load new messages
+# Routing logic
+if st.session_state.logged_in:
+    show_main_page()
+elif st.session_state.user_id:
+    show_login_page()
 else:
-    st.write("Please create your profile to start swiping.")
+    show_home_page()
