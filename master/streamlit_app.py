@@ -325,7 +325,7 @@ def show_chat_page():
             
             # Use markdown with custom CSS for scrollable box
             st.markdown(f"""
-                <div style="max-height: 300px; overflow-y: scroll; border: 1px solid #ccc; padding: 10px; background-color: #b8b8b8;">
+                <div style="max-height: 300px; overflow-y: scroll; border: 1px solid #ccc; padding: 10px; background-color: #B8B8B8;">
                     <pre>{message_text}</pre>
                 </div>
             """, unsafe_allow_html=True)
