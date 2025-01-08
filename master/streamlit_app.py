@@ -6,7 +6,7 @@ import json
 import os
 import time
 # Flask URL (replace with your actual Flask URL)
-FLASK_URL = "http://your-flask-server-url:5000"  # Update with your Flask URL
+FLASK_URL = "https://187656a7-ce97-402e-b9fe-32007ceddc4f-00-8nu6v4gp330w.sisko.replit.dev/"  # Update with your Flask URL
 # File to store user profiles and messages
 DATA_FILE = "profiles.json"
 
