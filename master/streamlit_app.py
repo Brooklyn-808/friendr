@@ -25,8 +25,8 @@ data = load_data()
 # Initialize session state variables
 if "user_id" not in st.session_state:
     st.session_state.user_id = None
-if "logged_in" not in st.session_state:
-    st.session_state.logged_in = False
+if "page" not in st.session_state:
+    st.session_state.page = "home"  # Default page
 if "current_index" not in st.session_state:
     st.session_state.current_index = 0
 if "chat_with" not in st.session_state:
@@ -44,10 +44,9 @@ def show_home_page():
     st.title("Friendr 👋")
     st.subheader("Welcome to Friendr!")
     st.write("Swipe, match, and chat with new friends!")
+    
     if st.button("Login / Sign Up"):
-        st.session_state.user_id = None
-        st.session_state.logged_in = False
-        st.experimental_rerun()
+        st.session_state.page = "login"  # Navigate to the login page
 
 # Login/Sign-Up Page
 def show_login_page():
@@ -61,12 +60,10 @@ def show_login_page():
         # Find user by username
         user = next((u for u in data["profiles"] if u["name"] == user_name), None)
         if user:
-            # Simple password check (In production, hash passwords!)
             if user.get("password") == password:
                 st.session_state.user_id = user["id"]
-                st.session_state.logged_in = True
+                st.session_state.page = "swipe"  # Navigate to swipe page
                 st.success("Logged in successfully!")
-                st.experimental_rerun()
             else:
                 st.error("Incorrect password. Please try again.")
         else:
@@ -86,14 +83,13 @@ def show_login_page():
             data["profiles"].append(new_user)
             save_data(data)
             st.session_state.user_id = new_user_id
-            st.session_state.logged_in = True
+            st.session_state.page = "swipe"  # Navigate to swipe page
             st.success("Sign-up successful! You are now logged in.")
-            st.experimental_rerun()
         else:
             st.error("Please fill in both fields.")
 
 # Profile and Swiping Page
-def show_main_page():
+def show_swipe_page():
     st.title("Friendr 👋")
     user_id = st.session_state.user_id
     user_profile = next((p for p in data["profiles"] if p["id"] == user_id), None)
@@ -122,8 +118,7 @@ def show_main_page():
 
         if st.button("Logout"):
             st.session_state.user_id = None
-            st.session_state.logged_in = False
-            st.experimental_rerun()
+            st.session_state.page = "home"  # Navigate to home page
 
     # Main swiping area
     st.write("### Browse Profiles")
@@ -141,20 +136,18 @@ def show_main_page():
                     data["likes"][user_id].append(profile["id"])
                     save_data(data)
                     st.session_state.current_index += 1
-                    st.experimental_rerun()
             with col2:
                 if st.button("👎 Skip", key=f"skip_{st.session_state.current_index}"):
                     st.session_state.current_index += 1
-                    st.experimental_rerun()
         else:
             st.write("No more profiles to swipe!")
     else:
         st.write("No profiles available.")
 
 # Routing logic
-if st.session_state.logged_in:
-    show_main_page()
-elif st.session_state.user_id:
-    show_login_page()
-else:
+if st.session_state.page == "home":
     show_home_page()
+elif st.session_state.page == "login":
+    show_login_page()
+elif st.session_state.page == "swipe":
+    show_swipe_page()
