@@ -325,6 +325,8 @@ def show_chat_page():
 
                 save_data(data)
             st.rerun()
+        if st.button("Refresh Chat"):
+            st.rerun()  # Trigger a rerun of the app, which will refresh the page
 
 
 # Main logic to switch between pages
