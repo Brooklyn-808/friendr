@@ -237,9 +237,16 @@ def show_chat_page():
             # Append the new message to the chat history
             data["messages"][match_profile["id"]].append(f"{user_profile['name']}: {message}")
             save_data(data)  # Save the updated data with the new message
-            st.experimental_rerun()  # Re-run the app to update the chat with the new message
+            
+            # Update the session state to refresh the chat page by setting the page back to chat
+            st.session_state.page = "chat"
+            
+            # Optionally, you can display the updated chat immediately by using this method:
+            st.experimental_memo.clear()  # Clear any memoization cache for fresh content
+            st.experimental_show("Refreshing chat...")
         else:
             st.error("Please type a message.")
+
         
 # Routing logic
 if st.session_state.page == "home":
