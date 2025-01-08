@@ -100,15 +100,16 @@ if st.session_state.user_profile:
 
         col1, col2 = st.columns(2)
         with col1:
+            if st.button("👎 Dislike"):
+                # Save skip action to JSON
+                st.session_state.current_index += 1
+        with col2:
             if st.button("👍 Like"):
                 # Save like to JSON
                 if user not in data["likes"]:
                     data["likes"][user] = []
                 data["likes"][user].append(profile["name"])
                 save_data(data)  # Save data after liking a profile
-                st.session_state.current_index += 1
-        with col2:
-            if st.button("👎 Skip"):
                 st.session_state.current_index += 1
     else:
         st.write("No more profiles to swipe! 😔")
