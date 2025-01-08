@@ -338,7 +338,7 @@ def show_chat_page():
                     data["messages"][user_id] = {}
                 if chat_with not in data["messages"][user_id]:
                     data["messages"][user_id][chat_with] = []
-                data["messages"][user_id][chat_with].append({user_id}: {new_message})
+                data["messages"][user_id][chat_with].append(f"{user_id}: {new_message}")
 
                 if chat_with not in data["messages"]:
                     data["messages"][chat_with] = {}
