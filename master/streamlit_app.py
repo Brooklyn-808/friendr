@@ -205,6 +205,7 @@ def show_notifications_page():
                     st.session_state.chat_with = match_id
                     st.session_state.page = "chat"  # Navigate to chat page
 
+# Ensure session state is initialized
 if "messages" not in st.session_state:
     st.session_state.messages = {}
 
@@ -249,8 +250,9 @@ def show_chat_page():
             # Save updated messages (if necessary)
             save_data(data)  # Assume save_data persists the data in your backend
             
-            # Clear the message input by rendering it again with a blank string
-            st.session_state[f"message_{match_profile['id']}"] = ""  # Reset input field value
+            # Instead of modifying session state directly to reset, set the input field value to an empty string
+            # Display the input with a blank string
+            st.text_input("Type your message here", value="", key=f"message_{match_profile['id']}")  # Clear input field
         else:
             st.error("Please type a message.")
     
@@ -285,7 +287,6 @@ def check_for_other_persons_message(match_profile_id):
             # Assume the last message is from the other person
             return chat_history[-1]  # Return the last message as the new message
     return None
-        
 # Routing logic
 if st.session_state.page == "home":
     show_home_page()
