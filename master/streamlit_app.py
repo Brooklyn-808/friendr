@@ -218,21 +218,26 @@ def show_chat_page():
         st.error("User not found.")
         return
     
-    # Show chat history
+    # Check if there are any existing messages between the user and the match
     if match_profile["id"] not in data["messages"]:
-        data["messages"][match_profile["id"]] = []
-    
+        data["messages"][match_profile["id"]] = []  # Initialize an empty list if no messages yet
+
+    # Display chat history
     chat_history = data["messages"][match_profile["id"]]
-    for msg in chat_history:
-        st.write(msg)
-    
+    if chat_history:
+        for msg in chat_history:
+            st.write(msg)
+    else:
+        st.write("No messages yet.")
+
     # Send message
     message = st.text_input("Type your message here", key=f"message_{match_profile['id']}")
     if st.button(f"Send to {match_profile['name']}", key=f"send_{match_profile['id']}"):
         if message:
+            # Append the new message to the chat history
             data["messages"][match_profile["id"]].append(f"{user_profile['name']}: {message}")
-            save_data(data)
-            st.success("Message sent!")
+            save_data(data)  # Save the updated data with the new message
+            st.experimental_rerun()  # Re-run the app to update the chat with the new message
         else:
             st.error("Please type a message.")
         
