@@ -1,6 +1,7 @@
 import streamlit as st
 import json
 import os
+import time
 
 # File to store user profiles, likes, and messages
 DATA_FILE = "profiles.json"
@@ -28,10 +29,14 @@ st.subheader("Swipe, Match, and Chat with New Friends!")
 # Check if the user has created a profile
 if "user_profile" not in st.session_state:
     st.session_state.user_profile = None
+if "unseen_profiles" not in st.session_state:
+    st.session_state.unseen_profiles = []
 if "current_index" not in st.session_state:
     st.session_state.current_index = 0
 if "chat_with" not in st.session_state:
     st.session_state.chat_with = None
+if "last_refresh" not in st.session_state:
+    st.session_state.last_refresh = 0
 
 # Function to display a single profile
 def display_profile(profile):
@@ -76,43 +81,21 @@ if st.session_state.user_profile:
     st.write("### Browse Friends")
     profiles = [p for p in data["profiles"] if p["name"] != st.session_state.user_profile["name"]]
 
+    # Update unseen_profiles list with new profiles
+    unseen_names = {p["name"] for p in profiles}
+    seen_names = {p["name"] for p in st.session_state.unseen_profiles}
+    new_profiles = unseen_names - seen_names
+    st.session_state.unseen_profiles += [p for p in profiles if p["name"] in new_profiles]
+
     # Check if someone liked the user
     user = st.session_state.user_profile["name"]
     liked_by_others = [u for u, liked_users in data["likes"].items() if user in liked_users]
     if liked_by_others:
         st.info(f"You've been liked by: {', '.join(liked_by_others)}")
 
-    # Show mutual matches and chat option
-    if user in data["likes"]:
-        mutual_matches = [u for u in data["likes"][user] if user in data["likes"].get(u, [])]
-        if mutual_matches:
-            st.write("### Mutual Matches")
-            for match in mutual_matches:
-                if st.button(f"Chat with {match}"):
-                    st.session_state.chat_with = match
-
-    if st.session_state.chat_with:
-        st.write(f"### Chat with {st.session_state.chat_with}")
-        chat_key = tuple(sorted([user, st.session_state.chat_with]))
-        if chat_key not in data["messages"]:
-            data["messages"][chat_key] = []
-
-        # Display chat messages
-        for message in data["messages"][chat_key]:
-            sender, text = message
-            st.write(f"**{sender}:** {text}")
-
-        # Send a new message
-        new_message = st.text_input("Write a message:")
-        if st.button("Send"):
-            if new_message:
-                data["messages"][chat_key].append((user, new_message))
-                save_data(data)
-                st.success("Message sent!")
-    
     # Swipe functionality
-    if st.session_state.current_index < len(profiles):
-        profile = profiles[st.session_state.current_index]
+    if st.session_state.current_index < len(st.session_state.unseen_profiles):
+        profile = st.session_state.unseen_profiles[st.session_state.current_index]
         display_profile(profile)
 
         col1, col2 = st.columns(2)
@@ -128,6 +111,16 @@ if st.session_state.user_profile:
             if st.button("👎 Skip"):
                 st.session_state.current_index += 1
     else:
-        st.write("No more profiles to swipe! Come back later. 😊")
+        st.write("No more profiles to swipe! 😔")
+        if st.button("🔄 Refresh Profiles"):
+            # Cooldown: Allow refresh only if 5 seconds have passed since the last refresh
+            current_time = time.time()
+            if current_time - st.session_state.last_refresh >= 5:
+                st.session_state.last_refresh = current_time
+                st.session_state.current_index = 0
+                st.session_state.unseen_profiles = [p for p in profiles if p["name"] not in seen_names]
+                st.success("Profiles refreshed! 🎉")
+            else:
+                st.warning("Please wait 5 seconds before refreshing again.")
 else:
     st.write("Please create your profile to start swiping.")
