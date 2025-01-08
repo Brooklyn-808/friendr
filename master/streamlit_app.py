@@ -74,15 +74,45 @@ def show_home_page():
     if st.button("Login"):
         st.session_state.page = "login"
 
-# Login Page
+# Login/Sign-Up Page
 def show_login_page():
-    st.title("Login")
-    user_id = st.text_input("Enter your user ID")
-    if user_id and user_id not in [profile['id'] for profile in data["profiles"]]:
-        st.error("User ID does not exist.")
-    elif user_id:
-        st.session_state.user_id = user_id
-        st.session_state.page = "swipe"
+    st.title("Login / Sign-Up")
+    st.write("Please log in or sign up to continue.")
+    
+    user_name = st.text_input("Username", key="login_username")
+    password = st.text_input("Password", type="password", key="login_password")
+    
+    if st.button("Login"):
+        user = next((u for u in data["profiles"] if u["name"] == user_name), None)
+        if user:
+            if user.get("password") == password:
+                st.session_state.user_id = user["id"]
+                st.session_state.page = "swipe"  # Navigate to swipe page
+                st.success("Logged in successfully!")
+            else:
+                st.error("Incorrect password.")
+        else:
+            st.error("User not found.")
+
+    if st.button("Sign Up"):
+        if user_name and password:
+            new_user_id = str(uuid.uuid4())
+            new_user = {
+                "id": new_user_id,
+                "name": user_name,
+                "password": password,
+                "age": 18,
+                "interests": [],
+                "bio": "",
+                "profile_pictures": []  # Add profile pictures here
+            }
+            data["profiles"].append(new_user)
+            save_data(data)
+            st.session_state.user_id = new_user_id
+            st.session_state.page = "swipe"
+            st.success("Sign-up successful!")
+        else:
+            st.error("Please fill in both fields.")
 
 # Swipe Page (where users browse profiles)
 def show_swipe_page():
