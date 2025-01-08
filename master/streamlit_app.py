@@ -12,7 +12,7 @@ def load_data():
         with open(DATA_FILE, "r") as file:
             return json.load(file)
     else:
-        return {"profiles": [], "likes": {}, "messages": {}}
+        return {"profiles": [], "likes": {}, "messages": {}, "notifications": {}}
 
 # Save profiles to JSON
 def save_data(data):
@@ -39,6 +39,18 @@ def display_profile(profile):
     st.write(f"**Interests:** {', '.join(profile['interests'])}")
     st.write(f"**Bio:** {profile['bio']}")
 
+# Notifications Section
+def show_notifications():
+    user_id = st.session_state.user_id
+    if user_id and user_id in data["notifications"]:
+        st.sidebar.subheader("Notifications")
+        notifications = data["notifications"][user_id]
+        for i, notification in enumerate(notifications):
+            st.sidebar.write(notification)
+            if st.sidebar.button(f"Dismiss Notification {i + 1}", key=f"dismiss_{i}"):
+                data["notifications"][user_id].remove(notification)
+                save_data(data)
+
 # Home Page
 def show_home_page():
     st.title("Friendr 👋")
@@ -57,7 +69,6 @@ def show_login_page():
     password = st.text_input("Password", type="password", key="login_password")
     
     if st.button("Login"):
-        # Find user by username
         user = next((u for u in data["profiles"] if u["name"] == user_name), None)
         if user:
             if user.get("password") == password:
@@ -65,10 +76,10 @@ def show_login_page():
                 st.session_state.page = "swipe"  # Navigate to swipe page
                 st.success("Logged in successfully!")
             else:
-                st.error("Incorrect password. Please try again.")
+                st.error("Incorrect password.")
         else:
-            st.error("User not found. Please sign up first.")
-    
+            st.error("User not found.")
+
     if st.button("Sign Up"):
         if user_name and password:
             new_user_id = str(uuid.uuid4())
@@ -76,15 +87,15 @@ def show_login_page():
                 "id": new_user_id,
                 "name": user_name,
                 "password": password,
-                "age": 18,  # Default age
+                "age": 18,
                 "interests": [],
                 "bio": "",
             }
             data["profiles"].append(new_user)
             save_data(data)
             st.session_state.user_id = new_user_id
-            st.session_state.page = "swipe"  # Navigate to swipe page
-            st.success("Sign-up successful! You are now logged in.")
+            st.session_state.page = "swipe"
+            st.success("Sign-up successful!")
         else:
             st.error("Please fill in both fields.")
 
@@ -95,10 +106,10 @@ def show_swipe_page():
     user_profile = next((p for p in data["profiles"] if p["id"] == user_id), None)
     
     if not user_profile:
-        st.error("User profile not found. Please log out and sign up again.")
+        st.error("User profile not found.")
         return
-    
-    # Sidebar for editing profile
+
+    # Sidebar for editing profile and navigation
     with st.sidebar:
         st.title("Your Profile")
         user_name = st.text_input("Name", user_profile["name"], key="profile_name")
@@ -119,9 +130,14 @@ def show_swipe_page():
         if st.button("Logout"):
             st.session_state.user_id = None
             st.session_state.page = "home"  # Navigate to home page
+        
+        if st.button("Liked Profiles"):
+            st.session_state.page = "liked_profiles"  # Navigate to liked profiles
+        
+        if st.button("Notifications"):
+            st.session_state.page = "notifications"  # Navigate to notifications
 
     # Main swiping area
-    st.write("### Browse Profiles")
     profiles = [p for p in data["profiles"] if p["id"] != user_id]
     if profiles:
         if st.session_state.current_index < len(profiles):
@@ -134,6 +150,9 @@ def show_swipe_page():
                     if user_id not in data["likes"]:
                         data["likes"][user_id] = []
                     data["likes"][user_id].append(profile["id"])
+                    if profile["id"] not in data["notifications"]:
+                        data["notifications"][profile["id"]] = []
+                    data["notifications"][profile["id"]].append(f"{user_profile['name']} liked your profile!")
                     save_data(data)
                     st.session_state.current_index += 1
             with col2:
@@ -144,6 +163,24 @@ def show_swipe_page():
     else:
         st.write("No profiles available.")
 
+# Liked Profiles Page
+def show_liked_profiles():
+    st.title("Liked Profiles")
+    user_id = st.session_state.user_id
+    liked_profiles = [p for p in data["profiles"] if p["id"] in data["likes"].get(user_id, [])]
+    
+    if liked_profiles:
+        for profile in liked_profiles:
+            st.write("---")
+            display_profile(profile)
+    else:
+        st.write("You haven't liked any profiles yet.")
+
+# Notifications Page
+def show_notifications_page():
+    st.title("Notifications")
+    show_notifications()
+
 # Routing logic
 if st.session_state.page == "home":
     show_home_page()
@@ -151,3 +188,7 @@ elif st.session_state.page == "login":
     show_login_page()
 elif st.session_state.page == "swipe":
     show_swipe_page()
+elif st.session_state.page == "liked_profiles":
+    show_liked_profiles()
+elif st.session_state.page == "notifications":
+    show_notifications_page()
