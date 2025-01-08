@@ -1,12 +1,9 @@
-import requests
-from datetime import datetime
 import streamlit as st
 import uuid
 import json
 import os
-import time
-# Flask URL (replace with your actual Flask URL)
-FLASK_URL = "https://187656a7-ce97-402e-b9fe-32007ceddc4f-00-8nu6v4gp330w.sisko.replit.dev/"  # Update with your Flask URL
+import time  # For delay
+
 # File to store user profiles and messages
 DATA_FILE = "profiles.json"
 
@@ -35,18 +32,27 @@ if "current_index" not in st.session_state:
     st.session_state.current_index = 0
 if "chat_with" not in st.session_state:
     st.session_state.chat_with = None
+if "current_picture" not in st.session_state:
+    st.session_state.current_picture = 0
 
-# Helper function to display a profile with multiple images
+# Helper function to display a profile
 def display_profile(profile):
-    # Show profile images as a slideshow
-    image_urls = profile.get("image_urls", [])
-    if image_urls:
-        for i, url in enumerate(image_urls):
-            st.image(url, width=300, caption=f"Profile Picture {i + 1}")
-            time.sleep(5)
-    else:
-        st.image("https://via.placeholder.com/400", width=300, caption="Profile Picture")
-    
+    # Display profile pictures as a slideshow if available
+    if "profile_pictures" in profile and profile["profile_pictures"]:
+        current_picture = st.session_state.get("current_picture", 0)
+        st.image(profile["profile_pictures"][current_picture], width=300, caption="Profile Picture")
+        
+        # Slideshow controls
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("Previous", key=f"prev_{profile['id']}"):
+                current_picture = (current_picture - 1) % len(profile["profile_pictures"])
+                st.session_state["current_picture"] = current_picture
+        with col2:
+            if st.button("Next", key=f"next_{profile['id']}"):
+                current_picture = (current_picture + 1) % len(profile["profile_pictures"])
+                st.session_state["current_picture"] = current_picture
+
     st.write(f"### {profile['name']} ({profile['age']} years old)")
     st.write(f"**Interests:** {', '.join(profile['interests'])}")
     st.write(f"**Bio:** {profile['bio']}")
@@ -68,11 +74,22 @@ def show_notifications():
                 data["notifications"][user_id].remove(notification)
                 save_data(data)
 
+# Function to check if both users like each other
+def mutual_like(user_id):
+    if user_id in data["likes"] and data["likes"].get(user_id):
+        for liked_user in data["likes"][user_id]:
+            if liked_user in data["likes"] and user_id in data["likes"][liked_user]:
+                return True
+    return False
+
 # Home Page
 def show_home_page():
-    st.title("Welcome to the Chat App!")
-    if st.button("Login"):
-        st.session_state.page = "login"
+    st.title("Friendr 👋")
+    st.subheader("Welcome to Friendr!")
+    st.write("Find a clique with a click!")
+    
+    if st.button("Login / Sign Up"):
+        st.session_state.page = "login"  # Navigate to the login page
 
 # Login/Sign-Up Page
 def show_login_page():
@@ -114,128 +131,131 @@ def show_login_page():
         else:
             st.error("Please fill in both fields.")
 
-# Swipe Page (where users browse profiles)
+# Profile and Swiping Page
 def show_swipe_page():
-    st.title("Swipe through Profiles")
-    show_notifications()  # Show notifications on the sidebar
-    
+    st.title("Friendr 👋")
     user_id = st.session_state.user_id
-    profiles = data["profiles"]
-    current_index = st.session_state.current_index
-
-    if current_index < len(profiles):
-        profile = profiles[current_index]
-        display_profile(profile)
-        
-        if st.button("Like"):
-            if user_id not in data["likes"]:
-                data["likes"][user_id] = []
-            data["likes"][user_id].append(profile["id"])
-            save_data(data)
-        
-        if st.button("Pass"):
-            st.session_state.current_index += 1
-        
-    else:
-        st.write("No more profiles to view.")
+    user_profile = next((p for p in data["profiles"] if p["id"] == user_id), None)
     
-    if st.button("View Liked Profiles"):
-        st.session_state.page = "liked_profiles"
+    if not user_profile:
+        st.error("User profile not found.")
+        return
+
+    # Sidebar for editing profile and navigation
+    with st.sidebar:
+        st.title("Your Profile")
+        user_name = st.text_input("Name", user_profile["name"], key="profile_name")
+        user_age = st.number_input("Age", min_value=13, max_value=100, value=user_profile.get("age", 18), key="profile_age")
+        user_interests = st.text_input("Interests (comma-separated)", ", ".join(user_profile["interests"]), key="profile_interests")
+        user_bio = st.text_area("Bio", user_profile.get("bio", ""), key="profile_bio")
+        profile_pictures = st.text_area("Profile Picture URLs (comma-separated)", 
+                                        ", ".join(user_profile.get("profile_pictures", [])), key="profile_pictures")
+
+        if st.button("Save Profile"):
+            user_profile.update({
+                "name": user_name,
+                "age": user_age,
+                "interests": [i.strip() for i in user_interests.split(",")],
+                "bio": user_bio,
+                "profile_pictures": [url.strip() for url in profile_pictures.split(",")],
+            })
+            save_data(data)
+            st.success("Profile updated!")
+
+        if st.button("Logout"):
+            st.session_state.user_id = None
+            st.session_state.page = "home"  # Navigate to home page
+        
+        if st.button("Liked Profiles"):
+            st.session_state.page = "liked_profiles"  # Navigate to liked profiles
+        
+        if st.button("Notifications"):
+            st.session_state.page = "notifications"  # Navigate to notifications
+
+    # Main swiping area
+    profiles = [p for p in data["profiles"] if p["id"] != user_id]
+    if profiles:
+        if st.session_state.current_index < len(profiles):
+            profile = profiles[st.session_state.current_index]
+            display_profile(profile)
+            
+            col1, col2 = st.columns(2)
+            with col1:
+                if st.button("👍 Like", key=f"like_{st.session_state.current_index}"):
+                    if user_id not in data["likes"]:
+                        data["likes"][user_id] = []
+                    data["likes"][user_id].append(profile["id"])
+                    if profile["id"] not in data["notifications"]:
+                        data["notifications"][profile["id"]] = []
+                    data["notifications"][profile["id"]].append(f"{user_profile['name']} liked your profile!")
+                    save_data(data)
+                    st.session_state.current_index += 1
+            with col2:
+                if st.button("👎 Skip", key=f"skip_{st.session_state.current_index}"):
+                    st.session_state.current_index += 1
+        else:
+            st.write("No more profiles to swipe!")
+    else:
+        st.write("No profiles available.")
 
 # Liked Profiles Page
 def show_liked_profiles():
-    st.title("Your Liked Profiles")
-    show_back_button()
-    
+    st.title("Liked Profiles")
+    show_back_button()  # Back button
+
     user_id = st.session_state.user_id
-    liked_profiles = data["likes"].get(user_id, [])
+    liked_profiles = [p for p in data["profiles"] if p["id"] in data["likes"].get(user_id, [])]
     
     if liked_profiles:
-        for liked_id in liked_profiles:
-            profile = next((p for p in data["profiles"] if p["id"] == liked_id), None)
-            if profile:
-                display_profile(profile)
-                if st.button(f"Chat with {profile['name']}"):
-                    st.session_state.chat_with = profile["id"]
-                    st.session_state.page = "chat"
+        for profile in liked_profiles:
+            st.write("---")
+            display_profile(profile)
+            if st.button(f"Chat with {profile['name']}", key=f"chat_{profile['id']}"):
+                st.session_state.chat_with = profile['id']
+                st.session_state.page = "chat"  # Navigate to chat page
     else:
         st.write("You haven't liked any profiles yet.")
 
 # Notifications Page
 def show_notifications_page():
     st.title("Notifications")
+    show_back_button()  # Back button
+
     show_notifications()
 
-# Function to get chat messages from Flask backend
-def get_chat_messages(sender, receiver):
-    response = requests.get(f"{FLASK_URL}/get_messages", params={"sender": sender, "receiver": receiver})
-    if response.status_code == 200:
-        return response.json()
-    return []
-
-# Function to send a chat message through Flask backend
-def send_chat_message(sender, receiver, message):
-    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    payload = {
-        "sender": sender,
-        "receiver": receiver,
-        "message": message,
-        "timestamp": timestamp
-    }
-    response = requests.post(f"{FLASK_URL}/send_message", json=payload)
-    if response.status_code == 200:
-        return True
-    return False
+    user_id = st.session_state.user_id
+    if user_id and user_id in data["notifications"]:
+        notifications = data["notifications"][user_id]
+        for i, notification in enumerate(notifications):
+            st.write(f"{i + 1}. {notification}")
 
 # Chat Page
 def show_chat_page():
-    st.title("Chat with Matches")
-    show_back_button()  # Function for the back button (if necessary)
-
-    # Get user and match profiles
+    st.title(f"Chat with {st.session_state.chat_with}")
     user_id = st.session_state.user_id
     chat_with = st.session_state.chat_with
-    user_profile = next((p for p in data["profiles"] if p["id"] == user_id), None)
-    match_profile = next((p for p in data["profiles"] if p["id"] == chat_with), None)
+    if user_id and chat_with:
+        messages = data["messages"].get(user_id, {}).get(chat_with, [])
+        for message in messages:
+            st.write(message)
+        
+        new_message = st.text_input("Write your message...", key="new_message")
+        if st.button("Send"):
+            if new_message:
+                if user_id not in data["messages"]:
+                    data["messages"][user_id] = {}
+                if chat_with not in data["messages"][user_id]:
+                    data["messages"][user_id][chat_with] = []
+                data["messages"][user_id][chat_with].append(new_message)
+                if chat_with not in data["messages"]:
+                    data["messages"][chat_with] = {}
+                if user_id not in data["messages"][chat_with]:
+                    data["messages"][chat_with][user_id] = []
+                data["messages"][chat_with][user_id].append(new_message)
+                save_data(data)
+                st.experimental_rerun()  # Refresh chat
 
-    if not match_profile:
-        st.error("User not found.")
-        return
-
-    # Fetch chat history from Flask backend
-    messages = get_chat_messages(user_id, chat_with)
-    
-    # Create an empty container for the chat history
-    chat_container = st.empty()
-
-    # Display the chat history in a scrollable text box
-    chat_history = "\n".join([f"{message['sender']}: {message['message']}" for message in messages])  # Format messages
-    
-    chat_container.text_area("Chat History", value=chat_history, height=300, max_chars=None, disabled=True)
-
-    # Check if we already have a value for the message in the session state
-    message_key = f"message_{match_profile['id']}"
-    if message_key not in st.session_state:
-        st.session_state[message_key] = ""  # Initialize empty message field
-
-    # Display the text input field using session state value
-    message = st.text_input("Type your message here", value=st.session_state[message_key], key=message_key)
-
-    # Send button
-    if st.button(f"Send to {match_profile['name']}", key=f"send_{match_profile['id']}"):
-        if message:
-            # Send the message through Flask
-            success = send_chat_message(user_id, chat_with, message)
-            if success:
-                st.success("Message sent")
-                st.session_state[message_key] = ""  # Clear input field
-                st.experimental_rerun()  # Refresh the page to show updated messages
-            else:
-                st.error("Failed to send message.")
-        else:
-            st.error("Please type a message.")
-    
-# Routing logic
+# Main logic to switch between pages
 if st.session_state.page == "home":
     show_home_page()
 elif st.session_state.page == "login":
