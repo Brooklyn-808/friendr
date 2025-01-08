@@ -233,8 +233,8 @@ def show_chat_page():
     chat_history = st.session_state.messages[match_profile["id"]]
     chat_text = "\n".join(chat_history)  # Join messages with newline to display
     
-    # Show the chat history in the container
-    chat_container.text_area("Chat History", value=chat_text, height=300, max_chars=None, key="chat_display", disabled=True)
+    # Use a unique key for each chat container
+    chat_container.text_area("Chat History", value=chat_text, height=300, max_chars=None, key=f"chat_display_{match_profile['id']}", disabled=True)
     
     # Check if we already have a value for the message in the session state
     message_key = f"message_{match_profile['id']}"
@@ -275,20 +275,11 @@ def show_chat_page():
         # After checking for new messages, update the chat container and wait for 5 seconds
         chat_history = st.session_state.messages[match_profile["id"]]
         chat_text = "\n".join(chat_history)
-        chat_container.text_area("Chat History", value=chat_text, height=300, max_chars=None, key="chat_display", disabled=True)
+        chat_container.text_area("Chat History", value=chat_text, height=300, max_chars=None, key=f"chat_display_{match_profile['id']}", disabled=True)
 
         # Wait for 5 seconds before checking again
         time.sleep(5)
 
-def check_for_other_persons_message(match_profile_id):
-    # This is a placeholder for checking if there is a new message from the other person
-    # For now, let's assume we get a new message whenever we check
-    if match_profile_id in data["messages"]:
-        chat_history = data["messages"][match_profile_id]
-        if len(chat_history) > 1:  # Check if there are multiple messages
-            # Assume the last message is from the other person
-            return chat_history[-1]  # Return the last message as the new message
-    return None
     
 # Routing logic
 if st.session_state.page == "home":
