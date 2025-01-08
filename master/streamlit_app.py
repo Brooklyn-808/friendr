@@ -235,8 +235,8 @@ def show_chat_page():
             data["messages"][match_profile["id"]].append(f"{user_profile['name']}: {message}")
             save_data(data)  # Save the updated data with the new message
 
-            # Update session state to refresh chat page
-            st.session_state.refresh_chat = True  # Flag to refresh chat
+            # Flag to trigger a refresh (this is handled through state change)
+            st.session_state.refresh_chat = True  # Flag to reload chat history
 
         else:
             st.error("Please type a message.")
@@ -249,13 +249,13 @@ def show_chat_page():
             data["messages"][match_profile["id"]].append(f"{match_profile['name']}: {new_message}")
             save_data(data)  # Save the updated data with the new received message
 
-            # Update session state to refresh chat page
-            st.session_state.refresh_chat = True  # Flag to refresh chat
+            # Flag to trigger a refresh (this is handled through state change)
+            st.session_state.refresh_chat = True  # Flag to reload chat history
 
-    # If the page needs to be refreshed (new message or send), reload the page
+    # If the page needs to be refreshed (new message or send), reload the chat content
     if "refresh_chat" in st.session_state and st.session_state.refresh_chat:
         st.session_state.refresh_chat = False  # Reset flag
-        st.experimental_rerun()  # This is now working as expected
+        st.experimental_rerun()  # This triggers a refresh of the app, which is the fallback method.
         
 
 # Helper function to check for received messages
