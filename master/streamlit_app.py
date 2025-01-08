@@ -16,6 +16,11 @@ def load_data():
 
 # Save profiles to JSON
 def save_data(data):
+    # Convert the keys of "messages" dictionary from tuple to string
+    messages = data.get("messages", {})
+    data["messages"] = {str(key): value for key, value in messages.items()}
+    
+    # Now save the data to the JSON file
     with open(DATA_FILE, "w") as file:
         json.dump(data, file, indent=4)
 
