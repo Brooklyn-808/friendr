@@ -71,7 +71,7 @@ if st.sidebar.button("Create/Edit Profile") or st.session_state.user_profile is 
                     break
             if not user_found:
                 data["profiles"].append(st.session_state.user_profile)
-            save_data(data)
+            save_data(data)  # Save data after profile creation/edit
             st.sidebar.success("Profile saved!")
         else:
             st.sidebar.error("Please fill in all required fields!")
@@ -105,7 +105,7 @@ if st.session_state.user_profile:
                 if user not in data["likes"]:
                     data["likes"][user] = []
                 data["likes"][user].append(profile["name"])
-                save_data(data)
+                save_data(data)  # Save data after liking a profile
                 st.session_state.current_index += 1
         with col2:
             if st.button("👎 Skip"):
@@ -149,7 +149,7 @@ if st.session_state.user_profile:
         if st.button("Send"):
             if new_message:
                 data["messages"][chat_key].append((user, new_message))
-                save_data(data)
+                save_data(data)  # Save messages after sending
                 st.success("Message sent!")
 else:
     st.write("Please create your profile to start swiping.")
