@@ -1,9 +1,12 @@
+import requests
+from datetime import datetime
 import streamlit as st
 import uuid
 import json
 import os
 import time
-
+# Flask URL (replace with your actual Flask URL)
+FLASK_URL = "http://your-flask-server-url:5000"  # Update with your Flask URL
 # File to store user profiles and messages
 DATA_FILE = "profiles.json"
 
@@ -133,37 +136,53 @@ def show_notifications_page():
     st.title("Notifications")
     show_notifications()
 
+# Function to get chat messages from Flask backend
+def get_chat_messages(sender, receiver):
+    response = requests.get(f"{FLASK_URL}/get_messages", params={"sender": sender, "receiver": receiver})
+    if response.status_code == 200:
+        return response.json()
+    return []
+
+# Function to send a chat message through Flask backend
+def send_chat_message(sender, receiver, message):
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    payload = {
+        "sender": sender,
+        "receiver": receiver,
+        "message": message,
+        "timestamp": timestamp
+    }
+    response = requests.post(f"{FLASK_URL}/send_message", json=payload)
+    if response.status_code == 200:
+        return True
+    return False
+
 # Chat Page
 def show_chat_page():
     st.title("Chat with Matches")
     show_back_button()  # Function for the back button (if necessary)
-    
+
     # Get user and match profiles
     user_id = st.session_state.user_id
     chat_with = st.session_state.chat_with
     user_profile = next((p for p in data["profiles"] if p["id"] == user_id), None)
     match_profile = next((p for p in data["profiles"] if p["id"] == chat_with), None)
-    
+
     if not match_profile:
         st.error("User not found.")
         return
-    
-    # Initialize chat history for the match if not already done
-    if match_profile["id"] not in st.session_state.messages:
-        st.session_state.messages[match_profile["id"]] = []  # Initialize empty list for chat messages
+
+    # Fetch chat history from Flask backend
+    messages = get_chat_messages(user_id, chat_with)
     
     # Create an empty container for the chat history
     chat_container = st.empty()
 
     # Display the chat history in a scrollable text box
-    chat_history = st.session_state.messages[match_profile["id"]]
-    chat_text = "\n".join(chat_history)  # Join messages with newline to display
+    chat_history = "\n".join([f"{message['sender']}: {message['message']}" for message in messages])  # Format messages
     
-    # Use a truly unique key by appending a UUID
-    chat_key = f"chat_display_{match_profile['id']}_{uuid.uuid4().hex}"
-    
-    chat_container.text_area("Chat History", value=chat_text, height=300, max_chars=None, key=chat_key, disabled=True)
-    
+    chat_container.text_area("Chat History", value=chat_history, height=300, max_chars=None, disabled=True)
+
     # Check if we already have a value for the message in the session state
     message_key = f"message_{match_profile['id']}"
     if message_key not in st.session_state:
@@ -171,38 +190,20 @@ def show_chat_page():
 
     # Display the text input field using session state value
     message = st.text_input("Type your message here", value=st.session_state[message_key], key=message_key)
-    
+
     # Send button
     if st.button(f"Send to {match_profile['name']}", key=f"send_{match_profile['id']}"):
         if message:
-            # Append the new message to the chat history
-            new_message = f"{user_profile['name']}: {message}"
-            st.session_state.messages[match_profile["id"]].append(new_message)
-            
-            # Save updated messages (if necessary)
-            save_data(data)  # Assume save_data persists the data in your backend
-            
-            # Update the session state for the input field, which is still shown with the same key
-            st.session_state[message_key] = ""  # Clear input field value (no widget modification)
+            # Send the message through Flask
+            success = send_chat_message(user_id, chat_with, message)
+            if success:
+                st.success("Message sent")
+                st.session_state[message_key] = ""  # Clear input field
+                st.experimental_rerun()  # Refresh the page to show updated messages
+            else:
+                st.error("Failed to send message.")
         else:
             st.error("Please type a message.")
-    
-    # Check for new messages from the other person every 5 seconds
-    if st.session_state.chat_with:
-        check_for_other_persons_message(match_profile["id"])
-
-def check_for_other_persons_message(match_profile_id):
-    # This function checks if there is a new message from the other person
-    if match_profile_id in data["messages"]:
-        chat_history = data["messages"][match_profile_id]
-        if len(chat_history) > 1:  # Check if there are multiple messages
-            # Assume the last message is from the other person
-            new_message = chat_history[-1]
-            if new_message not in st.session_state.messages[match_profile_id]:
-                # Append the new message from the other person
-                st.session_state.messages[match_profile_id].append(new_message)
-                save_data(data)  # Persist the new message
-                st.experimental_rerun()  # This ensures the display updates without triggering a complete rerun.
     
 # Routing logic
 if st.session_state.page == "home":
