@@ -8,13 +8,20 @@ import time  # For delay
 DATA_FILE = "profiles.json"
 
 
-# Update the user profile data to include a 'viewed' list
 def load_data():
     if os.path.exists(DATA_FILE):
         with open(DATA_FILE, "r") as file:
-            return json.load(file)
+            data = json.load(file)
     else:
-        return {"profiles": [], "likes": {}, "messages": {}, "notifications": {}, "viewed": {}}  # Add 'viewed'
+        data = {"profiles": [], "likes": {}, "messages": {}, "notifications": {}, "viewed": {}}  # Add 'viewed'
+    
+    # Ensure every user has a 'viewed' field initialized
+    for profile in data["profiles"]:
+        if "viewed" not in profile:
+            profile["viewed"] = []  # Initialize 'viewed' as an empty list if not present
+    
+    return data
+
 
 
 # Save profiles to JSON
