@@ -304,6 +304,7 @@ def show_chat_page():
             """, unsafe_allow_html=True)
         
 
+        display_messages()
         # Input for new messages
         new_message = st.text_input("Write your message...", key="new_message")
 
@@ -322,7 +323,6 @@ def show_chat_page():
                 data["messages"][chat_with][user_id].append(new_message)
 
                 save_data(data)
-        display_messages()
 
 
 # Main logic to switch between pages
