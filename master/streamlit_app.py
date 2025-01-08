@@ -205,6 +205,10 @@ def show_notifications_page():
                     st.session_state.page = "chat"  # Navigate to chat page
 
 def show_chat_page():
+    # Initialize st.session_state.messages if it doesn't exist
+    if "messages" not in st.session_state:
+        st.session_state.messages = {}
+
     st.title("Chat with Matches")
     show_back_button()  # Back button
 
@@ -218,7 +222,7 @@ def show_chat_page():
         st.error("User not found.")
         return
     
-    # Initialize chat history if not already done
+    # Initialize chat history for the match if not already done
     if match_profile["id"] not in st.session_state.messages:
         st.session_state.messages[match_profile["id"]] = []  # Initialize empty list for chat messages
     
