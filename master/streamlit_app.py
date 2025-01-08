@@ -144,9 +144,10 @@ def show_swipe_page():
         if st.button("Notifications"):
             st.session_state.page = "notifications"  # Navigate to notifications
 
+        # Refresh profiles by resetting current index
         if st.button("Refresh Profiles"):
             st.session_state.current_index = 0  # Reset current index
-            st.experimental_rerun()
+            st.experimental_set_query_params()  # Refresh query params to trigger reload
 
     # Main swiping area
     # Filter out profiles already seen by the user
@@ -178,8 +179,6 @@ def show_swipe_page():
                     save_data(data)
 
                     st.session_state.current_index += 1
-                    st.experimental_rerun()
-
             with col2:
                 if st.button("👎 Skip", key=f"skip_{st.session_state.current_index}"):
                     # Mark the profile as seen
@@ -187,7 +186,6 @@ def show_swipe_page():
                     save_data(data)
 
                     st.session_state.current_index += 1
-                    st.experimental_rerun()
         else:
             st.write("No more profiles to swipe!")
     else:
