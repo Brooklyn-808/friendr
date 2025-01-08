@@ -44,6 +44,67 @@ def show_back_button():
     if st.button("Back"):
         st.session_state.page = "swipe"  # Go back to the swiping page
 
+# Home Page
+def show_home_page():
+    st.title("Welcome to the Home Page")
+    if st.button("Go to Login"):
+        st.session_state.page = "login"
+
+# Login Page
+def show_login_page():
+    st.title("Login")
+    username = st.text_input("Enter username")
+    password = st.text_input("Enter password", type="password")
+    
+    if st.button("Login"):
+        if username and password:
+            st.session_state.user_id = str(uuid.uuid4())  # Simulate user login
+            st.session_state.page = "swipe"  # After login, go to swipe page
+        else:
+            st.error("Please provide both username and password")
+
+# Swipe Page
+def show_swipe_page():
+    st.title("Swipe Profiles")
+    user_id = st.session_state.user_id
+    user_profile = next((p for p in data["profiles"] if p["id"] == user_id), None)
+    
+    if not user_profile:
+        st.error("User profile not found.")
+        return
+
+    # Show the Back button
+    show_back_button()
+
+    # Filter out profiles already seen by the user
+    unseen_profiles = [profile for profile in data["profiles"] if profile["id"] not in data["likes"].get(user_id, [])]
+
+    if not unseen_profiles:
+        st.write("No new profiles available.")
+        return
+
+    # Display a profile from the list of unseen profiles
+    current_profile = unseen_profiles[st.session_state.current_index]
+
+    display_profile(current_profile)
+
+    # Like or Dislike buttons
+    if st.button("👍 Like"):
+        if user_id not in data["likes"]:
+            data["likes"][user_id] = []
+        data["likes"][user_id].append(current_profile["id"])
+        save_data(data)  # Save data after liking
+
+        # Move to the next profile
+        st.session_state.current_index += 1
+        if st.session_state.current_index >= len(unseen_profiles):
+            st.session_state.current_index = 0  # Reset if we go past the last profile
+
+    if st.button("👎 Dislike"):
+        st.session_state.current_index += 1
+        if st.session_state.current_index >= len(unseen_profiles):
+            st.session_state.current_index = 0  # Reset if we go past the last profile
+
 # Chat Page
 def show_chat_page():
     st.title("Chat with Mutual Matches")
