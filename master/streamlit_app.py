@@ -204,11 +204,11 @@ def show_notifications_page():
                     st.session_state.chat_with = match_id
                     st.session_state.page = "chat"  # Navigate to chat page
 
-# Chat Page
 def show_chat_page():
     st.title("Chat with Matches")
     show_back_button()  # Back button
-    
+
+    # Get user and match profiles
     user_id = st.session_state.user_id
     chat_with = st.session_state.chat_with
     user_profile = next((p for p in data["profiles"] if p["id"] == user_id), None)
@@ -218,56 +218,50 @@ def show_chat_page():
         st.error("User not found.")
         return
     
-    # Check if there are any existing messages between the user and the match
-    if match_profile["id"] not in data["messages"]:
-        data["messages"][match_profile["id"]] = []  # Initialize an empty list if no messages yet
+    # Initialize chat history if not already done
+    if match_profile["id"] not in st.session_state.messages:
+        st.session_state.messages[match_profile["id"]] = []  # Initialize empty list for chat messages
+    
+    # Display the chat history in a scrollable text box
+    chat_history = st.session_state.messages[match_profile["id"]]
+    chat_text = "\n".join(chat_history)  # Join messages with newline to display
+    st.text_area("Chat History", value=chat_text, height=300, max_chars=None, key="chat_display", disabled=True)
 
-    # Display chat history in a scrollable box
-    chat_history = data["messages"][match_profile["id"]]
-    chat_text = "\n".join(chat_history)  # Join messages with a newline
-    chat_display = st.text_area("Chat History", value=chat_text, height=300, max_chars=None, key="chat_display", disabled=True)
-
-    # Send message
+    # Text input field for typing a message
     message = st.text_input("Type your message here", key=f"message_{match_profile['id']}")
+
     if st.button(f"Send to {match_profile['name']}", key=f"send_{match_profile['id']}"):
         if message:
             # Append the new message to the chat history
-            data["messages"][match_profile["id"]].append(f"{user_profile['name']}: {message}")
-            save_data(data)  # Save the updated data with the new message
+            new_message = f"{user_profile['name']}: {message}"
+            st.session_state.messages[match_profile["id"]].append(new_message)
+            
+            # Save updated messages (if necessary)
+            save_data(data)  # Assume save_data persists the data in your backend
 
-            # Flag to trigger a refresh (this is handled through state change)
-            st.session_state.refresh_chat = True  # Flag to reload chat history
-
+            # Clear the input field
+            st.session_state[f"message_{match_profile['id']}"] = ""
         else:
             st.error("Please type a message.")
 
-    # Check for new messages from the other person
+    # Optionally check for new messages from the other person
     new_message = check_for_other_persons_message(match_profile["id"])
     if new_message:
-        # Avoid duplicate messages, append only if not already in history
+        # Append only if not already in the chat history
         if new_message not in chat_history:
-            data["messages"][match_profile["id"]].append(f"{match_profile['name']}: {new_message}")
-            save_data(data)  # Save the updated data with the new received message
+            st.session_state.messages[match_profile["id"]].append(f"{match_profile['name']}: {new_message}")
+            
+            # Save updated messages (if necessary)
+            save_data(data)  # Assume save_data persists the data in your backend
 
-            # Flag to trigger a refresh (this is handled through state change)
-            st.session_state.refresh_chat = True  # Flag to reload chat history
 
-    # If the page needs to be refreshed (new message or send), reload the chat content
-    if "refresh_chat" in st.session_state and st.session_state.refresh_chat:
-        st.session_state.refresh_chat = False  # Reset flag
-        st.experimental_rerun()  # This triggers a refresh of the app, which is the fallback method.
-        
-
-# Helper function to check for received messages
 def check_for_other_persons_message(match_profile_id):
-    # This is a placeholder for the logic to get messages from the other person
-    # For now, let's assume we get a new message from the other person if the ID matches
+    # This is a placeholder for checking if there is a new message from the other person
+    # For now, let's assume we get a new message whenever we check
     if match_profile_id in data["messages"]:
-        # Assuming the last message in the list is from the other person
         chat_history = data["messages"][match_profile_id]
-        if len(chat_history) > 1:
-            # Return the last message as the "new" message from the other person
-            return chat_history[-1]
+        if len(chat_history) > 1:  # Check if there are multiple messages
+            return chat_history[-1]  # Assume the last message is from the other person
     return None
 
         
