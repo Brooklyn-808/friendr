@@ -3,6 +3,8 @@ import uuid
 import json
 import os
 import time  # For delay
+from langchain.schema import HumanMessage
+from langchain_openai import ChatOpenAI
 
 # File to store user profiles and messages
 DATA_FILE = "profiles.json"
@@ -15,6 +17,12 @@ chat_omodel = ChatOpenAI(
     openai_api_key=api_key,  # Make sure to use a valid OpenAI API key
     model_name='gpt-4',  # Use the correct model name
 )
+def omodel(pod):
+  message = HumanMessage(content=pod)
+
+  # Invoke the model with the message
+  response = chat_omodel.invoke([message])
+  return response.content
 
 def load_data():
     if os.path.exists(DATA_FILE):
