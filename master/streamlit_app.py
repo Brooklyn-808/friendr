@@ -338,13 +338,13 @@ def show_chat_page():
                     data["messages"][user_id] = {}
                 if chat_with not in data["messages"][user_id]:
                     data["messages"][user_id][chat_with] = []
-                data["messages"][user_id][chat_with].append(f"{user_id}: <br>{new_message}")
+                data["messages"][user_id][chat_with].append(f"{user_id}: <br>{new_message}<br>")
 
                 if chat_with not in data["messages"]:
                     data["messages"][chat_with] = {}
                 if user_id not in data["messages"][chat_with]:
                     data["messages"][chat_with][user_id] = []
-                data["messages"][chat_with][user_id].append(f"{user_id}: <br>{new_message}")
+                data["messages"][chat_with][user_id].append(f"{user_id}: <br>{new_message}<br>")
                 save_data(data)
             #if not safe(new_message):
             #    if user_id not in data["messages"]:
