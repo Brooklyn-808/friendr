@@ -9,12 +9,8 @@ from langchain_openai import ChatOpenAI
 # File to store user profiles and messages
 DATA_FILE = "profiles.json"
 
-import os
-
-api_key = os.getenv("API_KEY")
 # Initialize ChatOpenAI model with skip_on_failure in model_kwargs
 chat_omodel = ChatOpenAI(
-    openai_api_key=api_key,  # Make sure to use a valid OpenAI API key
     model_name='gpt-4',  # Use the correct model name
 )
 def omodel(pod):
