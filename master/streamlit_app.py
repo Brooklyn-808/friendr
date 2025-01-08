@@ -8,26 +8,26 @@ from langchain_openai import ChatOpenAI
 
 # File to store user profiles and messages
 DATA_FILE = "profiles.json"
-"""
+
 # Initialize ChatOpenAI model with skip_on_failure in model_kwargs
-chat_omodel = ChatOpenAI(
-    model_name='gpt-4',  # Use the correct model name
-)
-def omodel(pod):
-  message = HumanMessage(content=pod)
+#chat_omodel = ChatOpenAI(
+#    model_name='gpt-4',  # Use the correct model name
+#)
+#def omodel(pod):
+#  message = HumanMessage(content=pod)
+#
+#  # Invoke the model with the message
+#  response = chat_omodel.invoke([message])
+#  return response.content
 
-  # Invoke the model with the message
-  response = chat_omodel.invoke([message])
-  return response.content
+#def safe(msg):
+#    prompt = (
+#        f"You are an API made to check if messages could be offensive to people. "
+#        f"Given this message: '{msg}', either return 'True' if it is safe or 'False' if otherwise."
+#    )
+#    response = omodel(prompt).strip().lower()  # Normalize the response
+#    return response == "true"
 
-def safe(msg):
-    prompt = (
-        f"You are an API made to check if messages could be offensive to people. "
-        f"Given this message: '{msg}', either return 'True' if it is safe or 'False' if otherwise."
-    )
-    response = omodel(prompt).strip().lower()  # Normalize the response
-    return response == "true"
-"""
 
 
 
@@ -346,20 +346,20 @@ def show_chat_page():
                     data["messages"][chat_with][user_id] = []
                 data["messages"][chat_with][user_id].append(new_message)
                 save_data(data)
-            """if not safe(new_message):
-                if user_id not in data["messages"]:
-                    data["messages"][user_id] = {}
-                if chat_with not in data["messages"][user_id]:
-                    data["messages"][user_id][chat_with] = []
-                data["messages"][user_id][chat_with].append("Inappropriate Message Detected")
+            #if not safe(new_message):
+            #    if user_id not in data["messages"]:
+            #        data["messages"][user_id] = {}
+            #    if chat_with not in data["messages"][user_id]:
+            #        data["messages"][user_id][chat_with] = []
+            #    data["messages"][user_id][chat_with].append("Inappropriate Message Detected")
 
-                if chat_with not in data["messages"]:
-                    data["messages"][chat_with] = {}
-                if user_id not in data["messages"][chat_with]:
-                    data["messages"][chat_with][user_id] = []
-                data["messages"][chat_with][user_id].append("Inappropriate Message Detected")
+            #    if chat_with not in data["messages"]:
+            #        data["messages"][chat_with] = {}
+            #    if user_id not in data["messages"][chat_with]:
+            #        data["messages"][chat_with][user_id] = []
+            #    data["messages"][chat_with][user_id].append("Inappropriate Message Detected")
 
-                save_data(data)"""
+            #    save_data(data)
             st.rerun()
         if st.button("Refresh Chat"):
             st.rerun()  # Trigger a rerun of the app, which will refresh the page
