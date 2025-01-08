@@ -7,13 +7,15 @@ import time  # For delay
 # File to store user profiles and messages
 DATA_FILE = "profiles.json"
 
-# Load profiles from JSON
+
+# Update the user profile data to include a 'viewed' list
 def load_data():
     if os.path.exists(DATA_FILE):
         with open(DATA_FILE, "r") as file:
             return json.load(file)
     else:
-        return {"profiles": [], "likes": {}, "messages": {}, "notifications": {}}
+        return {"profiles": [], "likes": {}, "messages": {}, "notifications": {}, "viewed": {}}  # Add 'viewed'
+
 
 # Save profiles to JSON
 def save_data(data):
@@ -151,7 +153,7 @@ def show_login_page():
         else:
             st.error("Please fill in both fields.")
 
-# Profile and Swiping Page
+# In the swiping page function, check if the profile has been viewed
 def show_swipe_page():
     st.title("Friendr 👋")
     user_id = st.session_state.user_id
@@ -193,7 +195,7 @@ def show_swipe_page():
             st.session_state.page = "notifications"  # Navigate to notifications
 
     # Main swiping area
-    profiles = [p for p in data["profiles"] if p["id"] != user_id]
+    profiles = [p for p in data["profiles"] if p["id"] != user_id and p["id"] not in user_profile.get("viewed", [])]  # Filter out viewed profiles
     if profiles:
         if st.session_state.current_index < len(profiles):
             profile = profiles[st.session_state.current_index]
@@ -208,15 +210,23 @@ def show_swipe_page():
                     if profile["id"] not in data["notifications"]:
                         data["notifications"][profile["id"]] = []
                     data["notifications"][profile["id"]].append(f"{user_profile['name']} liked your profile!")
+                    if user_id not in data["viewed"]:
+                        data["viewed"][user_id] = []
+                    data["viewed"][user_id].append(profile["id"])  # Add to viewed list
                     save_data(data)
                     st.session_state.current_index += 1
             with col2:
                 if st.button("👎 Skip", key=f"skip_{st.session_state.current_index}"):
+                    if user_id not in data["viewed"]:
+                        data["viewed"][user_id] = []
+                    data["viewed"][user_id].append(profile["id"])  # Add to viewed list
+                    save_data(data)
                     st.session_state.current_index += 1
         else:
             st.write("No more profiles to swipe!")
     else:
         st.write("No profiles available.")
+
 
 # Liked Profiles Page
 def show_liked_profiles():
