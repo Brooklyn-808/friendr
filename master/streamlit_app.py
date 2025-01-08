@@ -343,6 +343,18 @@ def show_chat_page():
                 if user_id not in data["messages"][chat_with]:
                     data["messages"][chat_with][user_id] = []
                 data["messages"][chat_with][user_id].append(new_message)
+            if not safe(new_message):
+                if user_id not in data["messages"]:
+                    data["messages"][user_id] = {}
+                if chat_with not in data["messages"][user_id]:
+                    data["messages"][user_id][chat_with] = []
+                data["messages"][user_id][chat_with].append("Inappropriate Message Detected")
+
+                if chat_with not in data["messages"]:
+                    data["messages"][chat_with] = {}
+                if user_id not in data["messages"][chat_with]:
+                    data["messages"][chat_with][user_id] = []
+                data["messages"][chat_with][user_id].append("Inappropriate Message Detected")
 
                 save_data(data)
             st.rerun()
