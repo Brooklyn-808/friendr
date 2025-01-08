@@ -275,12 +275,8 @@ def show_chat_page():
 
                 save_data(data)
             
-        # Update messages periodically
-        while True:
-            display_messages()
-            time.sleep(3)  # Update every 3 seconds
-            message_container.empty()  # Clear and refresh message container
-
+            # Refresh the page to update the chat
+            st.rerun()
 
 
 
