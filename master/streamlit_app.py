@@ -240,12 +240,9 @@ def show_chat_page():
             
             # Update the session state to refresh the chat page by setting the page back to chat
             st.session_state.page = "chat"
-            
-            # Optionally, you can display the updated chat immediately by using this method:
-            st.experimental_memo.clear()  # Clear any memoization cache for fresh content
-            st.experimental_show("Refreshing chat...")
         else:
             st.error("Please type a message.")
+
 
         
 # Routing logic
