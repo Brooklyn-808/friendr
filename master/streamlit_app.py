@@ -204,6 +204,9 @@ def show_notifications_page():
                 if st.button(f"Chat with {match_id}", key=f"chat_{match_id}"):
                     st.session_state.chat_with = match_id
                     st.session_state.page = "chat"  # Navigate to chat page
+# Ensure session state is initialized
+if "messages" not in st.session_state:
+    st.session_state.messages = {}
 
 def show_chat_page():
     st.title("Chat with Matches")
@@ -252,7 +255,7 @@ def show_chat_page():
             save_data(data)  # Assume save_data persists the data in your backend
             
             # Update the session state for the input field, which is still shown with the same key
-            st.session_state[message_key] = ""  # Clear input field value
+            st.session_state[message_key] = ""  # Clear input field value (no widget modification)
         else:
             st.error("Please type a message.")
     
