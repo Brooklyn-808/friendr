@@ -122,5 +122,34 @@ if st.session_state.user_profile:
                 st.success("Profiles refreshed! 🎉")
             else:
                 st.warning("Please wait 5 seconds before refreshing again.")
+
+    # Check if there's a mutual like to start chat
+    if user in data["likes"]:
+        mutual_matches = [u for u in data["likes"][user] if user in data["likes"].get(u, [])]
+        if mutual_matches:
+            st.write("### Mutual Matches")
+            for match in mutual_matches:
+                if st.button(f"Chat with {match}"):
+                    st.session_state.chat_with = match
+
+    # Handle the chat functionality
+    if st.session_state.chat_with:
+        st.write(f"### Chat with {st.session_state.chat_with}")
+        chat_key = tuple(sorted([user, st.session_state.chat_with]))
+        if chat_key not in data["messages"]:
+            data["messages"][chat_key] = []
+
+        # Display chat messages
+        for message in data["messages"][chat_key]:
+            sender, text = message
+            st.write(f"**{sender}:** {text}")
+
+        # Send a new message
+        new_message = st.text_input("Write a message:")
+        if st.button("Send"):
+            if new_message:
+                data["messages"][chat_key].append((user, new_message))
+                save_data(data)
+                st.success("Message sent!")
 else:
     st.write("Please create your profile to start swiping.")
