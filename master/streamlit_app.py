@@ -249,10 +249,10 @@ def show_chat_page():
         else:
             st.error("Please type a message.")
 
-    # Optionally check for new messages from the other person
+    # **NEW**: Check for new messages from the other person and add them to the chat history
     new_message = check_for_other_persons_message(match_profile["id"])
     if new_message:
-        # Append only if not already in the chat history
+        # Append the new message from the other person to the chat history
         if new_message not in chat_history:
             st.session_state.messages[match_profile["id"]].append(f"{match_profile['name']}: {new_message}")
             
@@ -266,7 +266,8 @@ def check_for_other_persons_message(match_profile_id):
     if match_profile_id in data["messages"]:
         chat_history = data["messages"][match_profile_id]
         if len(chat_history) > 1:  # Check if there are multiple messages
-            return chat_history[-1]  # Assume the last message is from the other person
+            # Assume the last message is from the other person
+            return chat_history[-1]  # Return the last message as the new message
     return None
 
         
