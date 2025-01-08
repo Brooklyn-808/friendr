@@ -222,14 +222,11 @@ def show_chat_page():
     if match_profile["id"] not in data["messages"]:
         data["messages"][match_profile["id"]] = []  # Initialize an empty list if no messages yet
 
-    # Display chat history
+    # Display chat history in a scrollable box
     chat_history = data["messages"][match_profile["id"]]
-    if chat_history:
-        for msg in chat_history:
-            st.write(msg)
-    else:
-        st.write("No messages yet.")
-    
+    chat_text = "\n".join(chat_history)  # Join messages with a newline
+    chat_display = st.text_area("Chat History", value=chat_text, height=300, max_chars=None, key="chat_display", disabled=True)
+
     # Send message
     message = st.text_input("Type your message here", key=f"message_{match_profile['id']}")
     if st.button(f"Send to {match_profile['name']}", key=f"send_{match_profile['id']}"):
@@ -237,36 +234,35 @@ def show_chat_page():
             # Append the new message to the chat history
             data["messages"][match_profile["id"]].append(f"{user_profile['name']}: {message}")
             save_data(data)  # Save the updated data with the new message
-            
-            # Update the session state to refresh the chat page
-            st.session_state.page = "chat"  # Set the page to chat to refresh content
-            
-            # Show the message right away without needing to rerun the page
-            st.write(f"{user_profile['name']}: {message}")
+
+            # Show the new message right away without needing to rerun the page
+            st.experimental_rerun()  # Refresh the page to update chat (can be replaced with alternative)
+
         else:
             st.error("Please type a message.")
-    
+
     # Check for new messages from the other person
     new_message = check_for_other_persons_message(match_profile["id"])
     if new_message:
-        st.write(f"{match_profile['name']}: {new_message}")
-        # Append the new message to the chat history
-        data["messages"][match_profile["id"]].append(f"{match_profile['name']}: {new_message}")
-        save_data(data)  # Save the updated data with the new received message
+        # Avoid duplicate messages, append only if not already in history
+        if new_message not in chat_history:
+            data["messages"][match_profile["id"]].append(f"{match_profile['name']}: {new_message}")
+            save_data(data)  # Save the updated data with the new received message
+            st.experimental_rerun()  # Refresh the page to show the new message
 
 
 # Helper function to check for received messages
 def check_for_other_persons_message(match_profile_id):
     # This is a placeholder for the logic to get messages from the other person
     # For now, let's assume we get a new message from the other person if the ID matches
-    # You can replace this with your actual logic to fetch received messages from the other person
     if match_profile_id in data["messages"]:
         # Assuming the last message in the list is from the other person
         chat_history = data["messages"][match_profile_id]
         if len(chat_history) > 1:
-            # Return the second-to-last message as the "new" message from the other person
+            # Return the last message as the "new" message from the other person
             return chat_history[-1]
     return None
+
 
 
 
