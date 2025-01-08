@@ -24,6 +24,11 @@ def omodel(pod):
   response = chat_omodel.invoke([message])
   return response.content
 
+def safe(msg):
+    return (omodel(f"You are an API made to check if messages could be offensive to people, given this message: '{msg}' either return 'True' if it is safe or 'False' if otherwise") == True)
+
+
+
 def load_data():
     if os.path.exists(DATA_FILE):
         with open(DATA_FILE, "r") as file:
@@ -326,7 +331,7 @@ def show_chat_page():
         new_message = st.text_input("Write your message...", key="new_message")
 
         if st.button("Send"):
-            if new_message:
+            if new_message and safe(new_message):
                 if user_id not in data["messages"]:
                     data["messages"][user_id] = {}
                 if chat_with not in data["messages"][user_id]:
