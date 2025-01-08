@@ -2,6 +2,7 @@ import streamlit as st
 import uuid
 import json
 import os
+import time  # For delay
 
 # File to store user profiles and messages
 DATA_FILE = "profiles.json"
@@ -204,14 +205,13 @@ def show_notifications_page():
                     st.session_state.chat_with = match_id
                     st.session_state.page = "chat"  # Navigate to chat page
 
+if "messages" not in st.session_state:
+    st.session_state.messages = {}
+
 def show_chat_page():
-    # Initialize st.session_state.messages if it doesn't exist
-    if "messages" not in st.session_state:
-        st.session_state.messages = {}
-
     st.title("Chat with Matches")
-    show_back_button()  # Back button
-
+    show_back_button()  # Function for the back button (if necessary)
+    
     # Get user and match profiles
     user_id = st.session_state.user_id
     chat_with = st.session_state.chat_with
@@ -226,11 +226,16 @@ def show_chat_page():
     if match_profile["id"] not in st.session_state.messages:
         st.session_state.messages[match_profile["id"]] = []  # Initialize empty list for chat messages
     
+    # Create an empty container for the chat history
+    chat_container = st.empty()
+
     # Display the chat history in a scrollable text box
     chat_history = st.session_state.messages[match_profile["id"]]
     chat_text = "\n".join(chat_history)  # Join messages with newline to display
-    st.text_area("Chat History", value=chat_text, height=300, max_chars=None, key="chat_display", disabled=True)
-
+    
+    # Show the chat history in the container
+    chat_container.text_area("Chat History", value=chat_text, height=300, max_chars=None, key="chat_display", disabled=True)
+    
     # Text input field for typing a message (keyed to match profile ID)
     message = st.text_input("Type your message here", key=f"message_{match_profile['id']}")
     
@@ -243,22 +248,33 @@ def show_chat_page():
             
             # Save updated messages (if necessary)
             save_data(data)  # Assume save_data persists the data in your backend
-
+            
             # Clear the message input by rendering it again with a blank string
-            message = ""  # Reset the message input field locally, Streamlit handles this automatically
+            st.session_state[f"message_{match_profile['id']}"] = ""  # Reset input field value
         else:
             st.error("Please type a message.")
+    
+    # **NEW**: Check for new messages from the other person every 5 seconds
+    # We will update the chat container after checking for new messages
+    while True:
+        new_message = check_for_other_persons_message(match_profile["id"])
+        if new_message:
+            # Append the new message from the other person to the chat history
+            if new_message not in chat_history:
+                st.session_state.messages[match_profile["id"]].append(f"{match_profile['name']}: {new_message}")
+                
+                # Save updated messages (if necessary)
+                save_data(data)  # Assume save_data persists the data in your backend
+            else:
+                st.info("No new message from the other person.")
+        
+        # After checking for new messages, update the chat container and wait for 5 seconds
+        chat_history = st.session_state.messages[match_profile["id"]]
+        chat_text = "\n".join(chat_history)
+        chat_container.text_area("Chat History", value=chat_text, height=300, max_chars=None, key="chat_display", disabled=True)
 
-    # **NEW**: Check for new messages from the other person and add them to the chat history
-    new_message = check_for_other_persons_message(match_profile["id"])
-    if new_message:
-        # Append the new message from the other person to the chat history
-        if new_message not in chat_history:
-            st.session_state.messages[match_profile["id"]].append(f"{match_profile['name']}: {new_message}")
-            
-            # Save updated messages (if necessary)
-            save_data(data)  # Assume save_data persists the data in your backend
-
+        # Wait for 5 seconds before checking again
+        time.sleep(5)
 
 def check_for_other_persons_message(match_profile_id):
     # This is a placeholder for checking if there is a new message from the other person
@@ -269,7 +285,6 @@ def check_for_other_persons_message(match_profile_id):
             # Assume the last message is from the other person
             return chat_history[-1]  # Return the last message as the new message
     return None
-
         
 # Routing logic
 if st.session_state.page == "home":
