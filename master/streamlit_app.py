@@ -180,6 +180,9 @@ def show_liked_profiles():
         for profile in liked_profiles:
             st.write("---")
             display_profile(profile)
+            if st.button(f"Chat with {profile['name']}", key=f"chat_{profile['id']}"):
+                st.session_state.chat_with = profile['id']
+                st.session_state.page = "chat"  # Navigate to chat page
     else:
         st.write("You haven't liked any profiles yet.")
 
@@ -190,41 +193,48 @@ def show_notifications_page():
 
     show_notifications()
 
+    user_id = st.session_state.user_id
+    if user_id and user_id in data["notifications"]:
+        notifications = data["notifications"][user_id]
+        for notification in notifications:
+            # Navigate to chat with the person from the notification
+            if "liked your profile" in notification:
+                match_id = notification.split(" ")[0]  # Assuming format: "Username liked your profile"
+                if st.button(f"Chat with {match_id}", key=f"chat_{match_id}"):
+                    st.session_state.chat_with = match_id
+                    st.session_state.page = "chat"  # Navigate to chat page
+
 # Chat Page
 def show_chat_page():
     st.title("Chat with Matches")
     show_back_button()  # Back button
     
     user_id = st.session_state.user_id
+    chat_with = st.session_state.chat_with
     user_profile = next((p for p in data["profiles"] if p["id"] == user_id), None)
+    match_profile = next((p for p in data["profiles"] if p["id"] == chat_with), None)
     
-    # Check mutual likes
-    mutual_matches = [
-        p for p in data["profiles"] if user_id in data["likes"].get(p["id"], []) and p["id"] in data["likes"].get(user_id, [])
-    ]
+    if not match_profile:
+        st.error("User not found.")
+        return
     
-    if mutual_matches:
-        for match in mutual_matches:
-            st.write(f"### Chat with {match['name']}")
-            if match["id"] not in data["messages"]:
-                data["messages"][match["id"]] = []
-            chat_history = data["messages"][match["id"]]
-            
-            # Show chat history
-            for msg in chat_history:
-                st.write(msg)
-            
-            # Send message
-            message = st.text_input("Type your message here", key=f"message_{match['id']}")
-            if st.button(f"Send to {match['name']}", key=f"send_{match['id']}"):
-                if message:
-                    data["messages"][match["id"]].append(f"{user_profile['name']}: {message}")
-                    save_data(data)
-                    st.success("Message sent!")
-                else:
-                    st.error("Please type a message.")
-    else:
-        st.write("You have no mutual matches to chat with.")
+    # Show chat history
+    if match_profile["id"] not in data["messages"]:
+        data["messages"][match_profile["id"]] = []
+    
+    chat_history = data["messages"][match_profile["id"]]
+    for msg in chat_history:
+        st.write(msg)
+    
+    # Send message
+    message = st.text_input("Type your message here", key=f"message_{match_profile['id']}")
+    if st.button(f"Send to {match_profile['name']}", key=f"send_{match_profile['id']}"):
+        if message:
+            data["messages"][match_profile["id"]].append(f"{user_profile['name']}: {message}")
+            save_data(data)
+            st.success("Message sent!")
+        else:
+            st.error("Please type a message.")
         
 # Routing logic
 if st.session_state.page == "home":
